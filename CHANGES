@@ -1,0 +1,98 @@
+3.19
+
+3.18
+	- broke apart Metadata from Encapsulation
+	- now uses XML::SAX in Response, rt.cpan.org ticket #27191
+	- shifted all use's into HTTP::OAI
+	- added use strict(), use warnings() to every module
+	- shifted $VERSION in HTTP::OAI
+	- href attribute lookup in METS should be namespaced too
+	- added mets test case
+	- fixed test cases for changed XML output
+
+3.17
+
+	- Removed next() call from oai_browser for List*
+	- Fixed missing HTTP:: in ListIdentifiers documentation
+	- Fixed missing namespace initialization in SAX
+	- Fixed bug in request where '?' wasn't being removed
+
+3.16
+
+  - Fixed recursion bug in onRecord
+	- No longer need to call next() for onRecord (Harvester will do it for you)
+	- Added PartialList module (ListIdentifiers, ListRecords, ListSets)
+
+3.15
+
+	- Several bug fixes, particularly catching and throwing parsing errors
+	- Added onRecord argument to ListRecords, ListIdentifiers, ListSets
+	- INCOMPATIBLE: Changed error handling, so now only need to check after the
+		next() loop for both initial errors and flow errors
+	- Added is_deleted method to Record and Header
+
+3.14
+
+	- By default oai-lib now fixes bad UTF-8 characters (replacing with '?')
+	  To disable this set $HTTP::OAI::UserAgent::IGNORE_BAD_CHARS to 0
+	- Fixed bug where a partially downloaded utf-8 character could cause a harvest to fail
+
+3.13
+
+3.12
+	- BUG: Static repository was re-fetching the source for every request
+	- API change: when parsing a static repository records are now pre-parsed to allow for quick GetRecord access, this means you *must* supply the handlers argument to the Harvester constructor (otherwise the first request's handlers are always used)
+	- Added resumptionToken option to ListIdentifiers in the oai_browser.pl tool 
+
+2005-09-05
+
+	- Added -oldstyle_urls to gateway & doc examples [thanks to Patrick Hochstenbach]
+
+2005-04-13
+
+	- Improved display of errors in the event of XML parsing failure (bad chars etc.)
+	- In the event of bad XML resumption token will not sleep(60) and retry, but simply fail
+
+2005-04-08
+
+	- Fixed bug where Header wasn't getting end_element on </header>, resulting in deleted items in ListRecords never being flagged as such
+
+2005-04-06
+
+	- UserAgent now uses a callback with LWP to parse XML responses, resulting in a much reduced memory footprint
+	- Compression support is removed for the moment
+
+2005-03-30
+
+	- CGI has an annoying habit of return the URL with semi-colons, ::Response now checks for this and acts appropriately
+	- Header was blanking setSpecs when given a dom (corrected POD for setSpec)
+	- Fixed Header missing the record status
+	- Tests added to getrecord.t for parsing Header
+	- oai_static_gateway.pl now throws an error if given a resumption token (which should never occur because it doesn't use Flow-Control)
+
+2005-03-07
+
+	- Fixed undef warning when trying to set the repository to an Identify w/o a base URL
+	- Changed back to XML::LibXML::SAX::Parser due to unreliability in XML::LibXML::SAX :-(
+
+2005-03-05
+
+	- 80network.t && added Prereqs (jaybonci@debian.org RT #11508 & #11509)
+
+2005-02-25
+
+	- Added new script 'gateway.pl' that acts as a static repository broker
+	- Library now uses temporary files to harvest (due to memory leak in LibXML's parse_string), provides for a smaller memory footprint
+	- Numerous bug fixes
+
+2005-02-23
+
+	- Added support for harvesting from Static repositories
+	- Fixed bug where the error message for an unsupported namespace wasn't getting displayed
+
+2004-10-08
+
+	- Moved to namespace HTTP::OAI
+	- Changed all arguments from -style to 'argument'
+	- Now uses (in a round-about way) XML::SAX, dropping the requirement for XML::Parser and XML::SAX::PerlSAX
+	- Fixed some bugs with the DOM construction code (which also effected toString)

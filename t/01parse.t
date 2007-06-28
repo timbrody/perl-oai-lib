@@ -1,0 +1,26 @@
+use Test::More tests => 4;
+
+use IO::File;
+use HTTP::OAI;
+use HTTP::OAI::Metadata::OAI_DC;
+ok(1);
+
+my $fh;
+
+my $r = HTTP::OAI::GetRecord->new(handlers=>{
+	metadata=>'HTTP::OAI::Metadata::OAI_DC'
+});
+$fh = IO::File->new('examples/getrecord.xml','r');
+$r->parse_file($fh);
+$fh->close();
+
+my $rec = $r->next;
+ok($rec);
+ok($rec->metadata->dc->{creator}->[0] eq 'Aspinwall, Paul S.');
+
+$r = HTTP::OAI::Identify->new();
+$fh = IO::File->new('examples/identify.xml','r');
+$r->parse_file($fh);
+$fh->close();
+
+ok($r->repositoryName eq 'citebase.eprints.org');
