@@ -11,7 +11,7 @@ my $fh;
 my $r = HTTP::OAI::GetRecord->new(handlers=>{
 	metadata=>'HTTP::OAI::Metadata::METS'
 });
-$fh = IO::File->new('examples/mets.xml','r');
+$fh = IO::File->new('examples/mets.xml','r') or die "Unable to open examples/mets.xml: $!";
 $r->parse_file($fh);
 $fh->close();
 
