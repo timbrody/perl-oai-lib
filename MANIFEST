@@ -3,6 +3,7 @@ bin/oai_static_gateway.pl
 CHANGES
 examples/getrecord.xml
 examples/identify.xml
+examples/mets.xml
 examples/repository.xml
 lib/HTTP/OAI.pm
 lib/HTTP/OAI/Encapsulation.pm

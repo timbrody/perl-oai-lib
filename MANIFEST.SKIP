@@ -2,3 +2,5 @@
 Makefile$
 Makefile.old
 MANIFEST.bak
+^blib
+.tar.gz$
