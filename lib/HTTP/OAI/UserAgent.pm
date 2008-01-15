@@ -42,7 +42,7 @@ sub request
 			Handler => $response->headers
 	));
 	$PARSER->{content_length} = 0;
-	$PARSER->{content_buffer} = Encode::encode('utf8','');
+	$PARSER->{content_buffer} = Encode::encode('UTF-8','');
 	$response->code(200);
 	$response->message('lwp_callback');
 	$response->headers->set_handler($response);
@@ -126,7 +126,7 @@ sub lwp_endparse
 	my $utf8 = $PARSER->{content_buffer};
 	# Replace bad chars with '?'
 	if( $IGNORE_BAD_CHARS and length($utf8) ) {
-		$utf8 = Encode::decode('utf8', $utf8, Encode::FB_PERLQQ|Encode::FB_WARN);
+		$utf8 = Encode::decode('UTF-8', $utf8, Encode::FB_PERLQQ|Encode::FB_WARN);
 		_ccchars(\$utf8); # Fix control chars
 	}
 	if( length($utf8) > 0 )
@@ -142,7 +142,7 @@ sub lwp_callback
 {
 	$PARSER->{content_buffer} .= $_[0];
 	# FB_QUIET won't split multi-byte chars on input
-	my $utf8 = Encode::decode('utf8', $PARSER->{content_buffer}, Encode::FB_QUIET);
+	my $utf8 = Encode::decode('UTF-8', $PARSER->{content_buffer}, Encode::FB_QUIET);
 	_ccchars(\$utf8); # Fix control chars
 	if( length($utf8) > 0 )
 	{
