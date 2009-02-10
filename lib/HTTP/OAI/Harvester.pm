@@ -3,7 +3,7 @@ package HTTP::OAI::Harvester;
 use strict;
 use warnings;
 
-use vars qw( @ISA $AUTOLOAD );
+use vars qw( @ISA );
 
 our $DEBUG = 0;
 
@@ -69,25 +69,18 @@ sub baseURL {
 
 sub version { shift->repository->version(@_); }
 
-sub DESTROY {
-	my $self = shift;
+# build the methods for each OAI verb
+foreach my $verb (qw( GetRecord Identify ListIdentifiers ListMetadataFormats ListRecords ListSets ))
+{
+	no strict "refs";
+	*$verb = sub { shift->_oai( verb => $verb, @_ )};
 }
 
-sub AUTOLOAD {
-	my $self = shift;
-	my $name = $AUTOLOAD;
-	$name =~ s/.*:://;
+sub _oai {
+	my( $self, %args ) = @_;
 
-	# Request isn't an OAI-PMH verb (must be for LWP)
-	if($name !~ /^GetRecord|Identify|ListIdentifiers|ListMetadataFormats|ListRecords|ListSets$/) {
-		my $superior = "SUPER::$name";
-		return $self->$superior(@_);
-	}
+	my $verb = $args{verb} or Carp::croak "Requires verb argument";
 
-	my %args = (
-		verb=>$name,
-		@_
-	);
 	my $handlers = delete($args{handlers}) || $self->{'handlers'};
 	my $onRecord = delete($args{onRecord}) || $self->{'onRecord'};
 
@@ -114,13 +107,13 @@ sub AUTOLOAD {
 		$self->{_interogated} = 1;
 	}
 	
-	if( 'ListIdentifiers' eq $name &&
+	if( 'ListIdentifiers' eq $verb &&
 		defined($self->repository->version) && 
 		'1.1' eq $self->repository->version ) {
 		delete $args{metadataPrefix};
 	}
 
-	my $r = "HTTP::OAI::$name"->new(
+	my $r = "HTTP::OAI::$verb"->new(
 		harvestAgent => $self,
 		resume => $self->resume,
 		handlers => $handlers,
@@ -170,14 +163,14 @@ sub AUTOLOAD {
 	} else {
 		$r->code(200);
 		# Format doesn't exist
-		if( $name =~ /^GetRecord|ListIdentifiers|ListRecords$/ &&
+		if( $verb =~ /^GetRecord|ListIdentifiers|ListRecords$/ &&
 			!exists($self->{_records}->{$args{metadataPrefix}}) ) {
 			$r->code(600);
 			$r->errors(HTTP::OAI::Error->new(
 				code=>'cannotDisseminateFormat',
 			));
 		# GetRecord
-		} elsif( $name eq 'GetRecord' ) {
+		} elsif( $verb eq 'GetRecord' ) {
 			for(@{$self->{_records}->{$args{metadataPrefix}}}) {
 				if( $_->identifier eq $args{identifier} ) {
 					$r->record($_);
@@ -189,19 +182,19 @@ sub AUTOLOAD {
 				code=>'idDoesNotExist'
 			));
 		# Identify
-		} elsif( $name eq 'Identify' ) {
+		} elsif( $verb eq 'Identify' ) {
 			$r = $self->repository();
 		# ListIdentifiers
-		} elsif( $name eq 'ListIdentifiers' ) {
+		} elsif( $verb eq 'ListIdentifiers' ) {
 			$r->identifier(map { $_->header } @{$self->{_records}->{$args{metadataPrefix}}})
 		# ListMetadataFormats
-		} elsif( $name eq 'ListMetadataFormats' ) {
+		} elsif( $verb eq 'ListMetadataFormats' ) {
 			$r->metadataFormat(@{$self->{_formats}});
 		# ListRecords
-		} elsif( $name eq 'ListRecords' ) {
+		} elsif( $verb eq 'ListRecords' ) {
 			$r->record(@{$self->{_records}->{$args{metadataPrefix}}});
 		# ListSets
-		} elsif( $name eq 'ListSets' ) {
+		} elsif( $verb eq 'ListSets' ) {
 			$r->errors(HTTP::OAI::Error->new(
 				code=>'noSetHierarchy',
 				message=>'Static Repositories do not support sets',

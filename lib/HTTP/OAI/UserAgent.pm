@@ -3,7 +3,7 @@ package HTTP::OAI::UserAgent;
 use strict;
 use warnings;
 
-use vars qw(@ISA $ACCEPT $PARSER);
+use vars qw(@ISA $ACCEPT);
 
 # Show debug messages
 our $DEBUG = 0;
@@ -11,6 +11,10 @@ our $DEBUG = 0;
 our $USE_EVAL = 1;
 # Ignore bad utf8 characters
 our $IGNORE_BAD_CHARS = 1;
+# Silence bad utf8 warnings
+our $SILENT_BAD_CHARS = 0;
+
+use constant MAX_UTF8_BYTES => 4;
 
 require LWP::UserAgent;
 @ISA = qw(LWP::UserAgent);
@@ -37,12 +41,13 @@ sub request
 		$request = HTTP::Request->new(GET => _buildurl(%$request));
 	}
 	return $self->SUPER::request(@_) unless $response;
-	$PARSER = XML::LibXML->new(
+	my $parser = XML::LibXML->new(
 		Handler => HTTP::OAI::SAXHandler->new(
 			Handler => $response->headers
 	));
-	$PARSER->{content_length} = 0;
-	$PARSER->{content_buffer} = Encode::encode('UTF-8','');
+	$parser->{request} = $request;
+	$parser->{content_length} = 0;
+	$parser->{content_buffer} = Encode::encode('UTF-8','');
 	$response->code(200);
 	$response->message('lwp_callback');
 	$response->headers->set_handler($response);
@@ -50,12 +55,16 @@ sub request
 	warn "Requesting " . $request->uri . "\n" if $DEBUG;
 	if( $USE_EVAL ) {
 		eval {
-			$r = $self->SUPER::request($request,\&lwp_callback);
-			lwp_endparse();
+			$r = $self->SUPER::request($request,sub {
+				$self->lwp_callback( $parser, @_ )
+			});
+			$self->lwp_endparse( $parser );
 		};
 	} else {
-		$r = $self->SUPER::request($request,\&lwp_callback);
-		lwp_endparse();
+		$r = $self->SUPER::request($request,sub {
+			$self->lwp_callback( $parser, @_ )
+		});
+		$self->lwp_endparse( $parser );
 	}
 	if( defined($r) && defined($r->headers->header( 'Client-Aborted' )) && $r->headers->header( 'Client-Aborted' ) eq 'die' )
 	{
@@ -68,8 +77,8 @@ sub request
 	# Allow access to the original headers through 'previous'
 	$response->previous($r);
 	
-	my $cnt_len = $PARSER->{content_length};
-	undef $PARSER;
+	my $cnt_len = $parser->{content_length};
+	undef $parser;
 
 	# OAI retry-after
 	if( defined($r) && $r->code == 503 && defined(my $timeout = $r->headers->header('Retry-After')) ) {
@@ -121,45 +130,83 @@ sub request
 	$response;
 }
 
+sub lwp_badchar
+{
+	my $codepoint = sprintf('U+%04x', ord($_[2]));
+	unless( $SILENT_BAD_CHARS )
+	{
+		warn "Bad Unicode character $codepoint at byte offset ".$_[1]->{content_length}." from ".$_[1]->{request}->uri."\n";
+	}
+	return $codepoint;
+}
+
 sub lwp_endparse
 {
-	my $utf8 = $PARSER->{content_buffer};
+	my( $self, $parser ) = @_; 
+
+	my $utf8 = $parser->{content_buffer};
 	# Replace bad chars with '?'
 	if( $IGNORE_BAD_CHARS and length($utf8) ) {
-		$utf8 = Encode::decode('UTF-8', $utf8, Encode::FB_PERLQQ|Encode::FB_WARN);
-		_ccchars(\$utf8); # Fix control chars
+		$utf8 = Encode::decode('UTF-8', $utf8, sub { $self->lwp_badchar($parser, @_) });
 	}
 	if( length($utf8) > 0 )
 	{
-		$PARSER->{content_length} += length($utf8);
-		$PARSER->parse_chunk($utf8);
+		_ccchars($utf8); # Fix control chars
+		$parser->{content_length} += length($utf8);
+		$parser->parse_chunk($utf8);
 	}
-	delete($PARSER->{content_buffer});
-	$PARSER->parse_chunk('', 1);
+	delete($parser->{content_buffer});
+	$parser->parse_chunk('', 1);
 }
 
 sub lwp_callback
 {
-	$PARSER->{content_buffer} .= $_[0];
-	# FB_QUIET won't split multi-byte chars on input
-	my $utf8 = Encode::decode('UTF-8', $PARSER->{content_buffer}, Encode::FB_QUIET);
-	_ccchars(\$utf8); # Fix control chars
-	if( length($utf8) > 0 )
+	my( $self, $parser ) = @_;
+
+	use bytes; # fixing utf-8 will need byte semantics
+
+	$parser->{content_buffer} .= $_[2];
+
+	do
 	{
-		$PARSER->{content_length} += length($utf8);
-		$PARSER->parse_chunk($utf8);
-	}
+		# FB_QUIET won't split multi-byte chars on input
+		my $utf8 = Encode::decode('UTF-8', $parser->{content_buffer}, Encode::FB_QUIET);
+
+		if( length($utf8) > 0 )
+		{
+			use utf8;
+			_ccchars($utf8); # Fix control chars
+			$parser->{content_length} += length($utf8);
+			$parser->parse_chunk($utf8);
+		}
+
+		if( length($parser->{content_buffer}) > MAX_UTF8_BYTES )
+		{
+			$parser->{content_buffer} =~ s/^([\x80-\xff]{1,4})//s;
+			my $badbytes = $1;
+			if( length($badbytes) == 0 )
+			{
+				Carp::confess "Internal error - bad bytes but not in 0x80-0xff range???";
+			}
+			if( $IGNORE_BAD_CHARS )
+			{
+				$badbytes = join('', map {
+					$self->lwp_badchar($parser, $_)
+				} split //, $badbytes);
+			}
+			$parser->parse_chunk( $badbytes );
+		}
+	} while( length($parser->{content_buffer}) > MAX_UTF8_BYTES );
 }
 
 sub _ccchars {
-	my $str = shift;
-	$$str =~ s/([\x00-\x08\x0b-\x0c\x0e-\x1f])/sprintf("\\%04d",ord($1))/seg;
+	$_[0] =~ s/([\x00-\x08\x0b-\x0c\x0e-\x1f])/sprintf("\\%04d",ord($1))/seg;
 }
 
 sub _buildurl {
 	my %attr = @_;
-	Carp::croak "_buildurl requires baseURL" unless $attr{'baseURL'};
-	Carp::croak "_buildurl requires verb" unless $attr{'verb'};
+	Carp::confess "_buildurl requires baseURL" unless $attr{'baseURL'};
+	Carp::confess "_buildurl requires verb" unless $attr{'verb'};
 	my $uri = new URI(delete($attr{'baseURL'}));
 	if( defined($attr{resumptionToken}) && !$attr{force} ) {
 		$uri->query_form(verb=>$attr{'verb'},resumptionToken=>$attr{'resumptionToken'});

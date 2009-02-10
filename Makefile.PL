@@ -11,6 +11,7 @@ WriteMakefile(
 	VERSION_FROM	=> 'lib/HTTP/OAI.pm',
 	EXE_FILES	=> [ qw( bin/oai_browser.pl ) ],
 	PREREQ_PM	=> {
+				'Encode' => 2.12,
 				'XML::LibXML' => 1.60,
 				'XML::SAX::Base' => 1.00,
 				'URI' => 0,

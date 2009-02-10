@@ -1,3 +1,9 @@
+3.21
+	- added test case for bad characters
+	- fix bad chars as they arrive, to avoid buffering an entire response if it
+	  contains bad chars
+	- some code cleanup
+
 3.20
 	- use strict UTF-8 (suggested by Dennis Vierkant)
 
