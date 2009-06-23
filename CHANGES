@@ -1,3 +1,9 @@
+3.22
+	- added debug class HTTP::OAI::Debug
+	- added check in 01parse test case for file open
+	- added 000xml_sax.pl test case for basic XML::SAX function
+	- added "trace" and "saxtrace" options to oai_browser.pl
+
 3.21
 	- added test case for bad characters
 	- fix bad chars as they arrive, to avoid buffering an entire response if it

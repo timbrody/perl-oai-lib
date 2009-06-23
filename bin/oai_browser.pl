@@ -35,6 +35,14 @@ Show this page.
 
 Don't display data harvested from the repository - only shows a record count.
 
+=item B<--trace>
+
+Turn on trace debugging.
+
+=item B<--tracesax>
+
+Turn on trace debugging of SAX calls.
+
 =cut
 
 BEGIN {
@@ -67,20 +75,39 @@ use warnings;
 binmode(STDOUT,":utf8");
 
 use Getopt::Long;
-use Term::ReadLine;
-use Term::ReadKey;
+eval "use Term::ReadLine";
+if( $@ )
+{
+	die "Requires Term::ReadLine perl module\n";
+}
+eval "use Term::ReadKey";
+if( $@ )
+{
+	die "Requires Term::ReadKey perl module\n";
+}
 
 use HTTP::OAI::Harvester;
 use HTTP::OAI::Metadata::OAI_DC;
 
-my ($opt_silent, $opt_help);
+my ($opt_silent, $opt_help, $opt_trace, $opt_tracesax);
 $opt_silent = 0;
 GetOptions (
 	'silent' => \$opt_silent,
 	'help' => \$opt_help,
+	'trace' => \$opt_trace,
+	'tracesax' => \$opt_tracesax,
 );
 
 pod2usage(1) if $opt_help;
+
+if( $opt_trace )
+{
+	HTTP::OAI::Debug::level( '+trace' );
+}
+if( $opt_tracesax )
+{
+	HTTP::OAI::Debug::level( '+sax' );
+}
 
 print <<EOF;
 Welcome to the Open Archives Browser $VERSION
@@ -102,7 +129,7 @@ $TERM->addhistory(@ARCHIVES);
 while(1) {
 #	my $burl = input('Enter the base URL to use [http://cogprints.soton.ac.uk/perl/oai2]: ') || 'http://cogprints.soton.ac.uk/perl/oai2';
 	my $burl = shift || $TERM->readline('OAI Base URL to query>','http://cogprints.soton.ac.uk/perl/oai2') || next;
-	$h = new HTTP::OAI::Harvester(baseURL=>$burl,debug=>!$opt_silent);
+	$h = new HTTP::OAI::Harvester(baseURL=>$burl);
 	if( my $r = Identify() ) {
 		$h->repository($r);
 		$PROTOCOL_VERSION = $r->version;

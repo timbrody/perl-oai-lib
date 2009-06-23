@@ -16,7 +16,7 @@ http://memory.loc.gov/cgi-bin/oai2_0
 http://eprints.ecs.soton.ac.uk/perl/oai2
 );
 
-my $h = HTTP::OAI::Harvester->new(debug=>0,baseURL=>$repos[int(rand(@repos))]);
+my $h = HTTP::OAI::Harvester->new(baseURL=>$repos[int(rand(@repos))]);
 
 my $r;
 

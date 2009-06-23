@@ -5,8 +5,6 @@ use warnings;
 
 use vars qw(@ISA $ACCEPT);
 
-# Show debug messages
-our $DEBUG = 0;
 # Do not use eval()
 our $USE_EVAL = 1;
 # Ignore bad utf8 characters
@@ -21,14 +19,6 @@ require LWP::UserAgent;
 
 unless( $@ ) {
 	$ACCEPT = "gzip";
-}
-
-sub new {
-	my ($class,%args) = @_;
-	$DEBUG = $args{debug} if $args{debug};
-	delete $args{debug};
-	my $self = $class->SUPER::new(%args);
-	$self;
 }
 
 sub redirect_ok { 1 }
@@ -51,8 +41,8 @@ sub request
 	$response->code(200);
 	$response->message('lwp_callback');
 	$response->headers->set_handler($response);
+HTTP::OAI::Debug::trace( $response->verb . " " . ref($parser) . "->parse_chunk()" );
 	my $r;
-	warn "Requesting " . $request->uri . "\n" if $DEBUG;
 	if( $USE_EVAL ) {
 		eval {
 			$r = $self->SUPER::request($request,sub {
@@ -91,7 +81,7 @@ sub request
 			warn ref($self)." Archive specified an odd duration to wait (\"".($timeout||'null')."\")\n";
 			return $response->copy_from( $r );
 		}
-		warn "Waiting $timeout seconds [" . $request->uri . "]\n" if $DEBUG;
+HTTP::OAI::Debug::trace( "Waiting $timeout seconds" );
 		sleep($timeout+10); # We wait an extra 10 secs for safety
 		return $self->request($request,undef,undef,undef,$response);
 	# Got an empty response
@@ -101,7 +91,7 @@ sub request
 			warn ref($self)."::request (empty response) Given up requesting after 10 retries\n";
 			return $response->copy_from( $r );
 		}
-		warn "Retrying on empty response [" . $request->uri . "]\n" if $DEBUG;
+HTTP::OAI::Debug::trace( "Retrying on empty response" );
 		sleep(5);
 		return $self->request($request,undef,undef,undef,$response);
 	# An HTTP error occurred
@@ -276,9 +266,9 @@ This module provides a simplified mechanism for making requests to an OAI reposi
 
 =over 4
 
-=item $ua = new HTTP::OAI::UserAgent(debug=>1,proxy=>'www-cache',...)
+=item $ua = new HTTP::OAI::UserAgent(proxy=>'www-cache',...)
 
-This constructor method returns a new instance of a HTTP::OAI::UserAgent module. Optionally takes a debug argument. Any other arguments are passed to the L<LWP::UserAgent|LWP::UserAgent> constructor.
+This constructor method returns a new instance of a HTTP::OAI::UserAgent module. All arguments are passed to the L<LWP::UserAgent|LWP::UserAgent> constructor.
 
 =item $r = $ua->request($req)
 

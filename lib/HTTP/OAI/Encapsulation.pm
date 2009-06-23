@@ -78,6 +78,7 @@ sub generate {
 
 sub start_document {
 	my ($self) = @_;
+HTTP::OAI::Debug::trace( ref($self) );
 	my $builder = XML::LibXML::SAX::Builder->new() or die "Unable to create XML::LibXML::SAX::Builder: $!";
 	$self->{OLDHandler} = $self->get_handler();
 	$self->set_handler($builder);
@@ -90,6 +91,7 @@ sub end_document {
 	$self->SUPER::end_document();
 	$self->dom($self->get_handler->result());
 	$self->set_handler($self->{OLDHandler});
+HTTP::OAI::Debug::trace( ref($self) . " <" . $self->dom->documentElement->nodeName . " />" );
 }
 
 1;

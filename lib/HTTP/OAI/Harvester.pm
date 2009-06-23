@@ -5,8 +5,6 @@ use warnings;
 
 use vars qw( @ISA );
 
-our $DEBUG = 0;
-
 @ISA = qw( HTTP::OAI::UserAgent );
 
 sub new {
@@ -16,8 +14,6 @@ sub new {
 	my $self = $class->SUPER::new(%ARGS);
 
 	$self->{'resume'} = exists($args{resume}) ? $args{resume} : 1;
-	$DEBUG = $args{debug} if defined($args{debug});
-	$args{debug} = $DEBUG;
 	$self->{'handlers'} = $args{'handlers'};
 	$self->{'onRecord'} = $args{'onRecord'};
 	$self->agent('OAI-PERL/'.$HTTP::OAI::VERSION);
@@ -208,7 +204,7 @@ sub interogate {
 	my $self = shift;
 	Carp::croak "Requires baseURL" unless $self->baseURL;
 	
-	warn "Requesting " . $self->baseURL . "\n" if $DEBUG;
+HTTP::OAI::Debug::trace($self->baseURL);
 	my $r = $self->request(HTTP::Request->new(GET => $self->baseURL));
 	return unless length($r->content);
 	my $id = HTTP::OAI::Identify->new(

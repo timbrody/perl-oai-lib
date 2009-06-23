@@ -130,6 +130,7 @@ sub parse_file {
 			Handler=>$self->headers
 	));
 
+HTTP::OAI::Debug::trace( $self->verb . " " . ref($parser) . "->parse_file( ".ref($fh)." )" );
 	$self->headers->set_handler($self);
 	$USE_EVAL ?
 		eval { $parser->parse_file($fh) } :
@@ -164,6 +165,7 @@ sub parse_string {
 			Handler=>HTTP::OAI::SAXHandler->new(
 				Handler=>$self->headers
 		));
+HTTP::OAI::Debug::trace( $self->verb . " " . ref($parser) . "->parse_string(...)" );
 
 		$self->headers->set_handler($self);
 		$USE_EVAL ?
@@ -206,11 +208,18 @@ sub resume {
 	my $token = $args{resumptionToken} || Carp::confess "Required argument resumptionToken is undefined";
 	my $verb = $args{verb} || $self->verb || Carp::confess "Required argument verb is undefined";
 
+	if( !ref($token) or !$token->isa( "HTTP::OAI::ResumptionToken" ) )
+	{
+		$token = HTTP::OAI::ResumptionToken->new( resumptionToken => $token );
+	}
+
+HTTP::OAI::Debug::trace( "'" . $token->resumptionToken . "'" );
+
 	my $response;
 	%args = (
 		baseURL=>$ha->repository->baseURL,
 		verb=>$verb,
-		resumptionToken=>(ref $token ? $token->resumptionToken : $token),
+		resumptionToken=>$token->resumptionToken,
 	);
 	$self->headers->{_args} = \%args;
 
@@ -229,13 +238,11 @@ sub resume {
 					$tries = 0;
 				}
 			}
-			if( $HTTP::OAI::Harvester::DEBUG ) {
-				warn sprintf("Error resuming using token [%s] %d [%s]\n",
-					$args{resumptionToken},
-					$response->code,
-					$response->message
-				);
-			}
+HTTP::OAI::Debug::trace( sprintf("Error response to '%s': %d '%s'\n",
+	$args{resumptionToken},
+	$response->code,
+	$response->message
+	) );
 		}
 	} while(
 		!$response->is_success and

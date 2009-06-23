@@ -11,7 +11,7 @@ ok(1);
 # transparent gateway to static repositories
 
 my $fn = "file:".$ENV{PWD}."/examples/repository.xml";
-my $repo = HTTP::OAI::Harvester->new(baseURL=>$fn,debug=>0);
+my $repo = HTTP::OAI::Harvester->new(baseURL=>$fn);
 ok($repo);
 ok($repo->Identify->version eq '2.0s');
 # Removed this test, as paths screw up too much

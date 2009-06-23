@@ -1,9 +1,8 @@
 package HTTP::OAI;
 
 use strict;
-use warnings;
 
-our $VERSION = '3.21';
+our $VERSION = '3.22';
 
 # perlcore
 use Carp;
@@ -22,6 +21,9 @@ use XML::LibXML;
 use XML::LibXML::SAX;
 use XML::LibXML::SAX::Parser;
 use XML::LibXML::SAX::Builder;
+
+# debug
+use HTTP::OAI::Debug;
 
 # oai data objects
 use HTTP::OAI::Encapsulation; # Basic XML handling stuff
@@ -54,6 +56,15 @@ use HTTP::OAI::Harvester;
 use HTTP::OAI::Repository;
 
 $HTTP::OAI::Harvester::VERSION = $VERSION;
+
+if( $ENV{HTTP_OAI_TRACE} )
+{
+	HTTP::OAI::Debug::level( '+trace' );
+}
+if( $ENV{HTTP_OAI_SAX_TRACE} )
+{
+	HTTP::OAI::Debug::level( '+sax' );
+}
 
 1;
 

@@ -3,11 +3,9 @@ package HTTP::OAI::SAXHandler;
 use strict;
 use warnings;
 
-use vars qw($DEBUG @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
 use Data::Dumper; # debugging for here
-
-$DEBUG = 0;
 
 @ISA = qw( Exporter XML::SAX::Base );
 
@@ -110,22 +108,21 @@ sub current_element {
 }
 
 sub start_document {
-	my $self = shift;
-warn "start_document: ".Dumper(shift)."\n" if $DEBUG;
-	$self->SUPER::start_document();
+HTTP::OAI::Debug::sax( Dumper($_[1]) );
+	$_[0]->SUPER::start_document();
 }
 
 sub end_document {
-	my $self = shift;
-	$self->SUPER::end_document();
-warn "end_document\n" if $DEBUG;
+	$_[0]->SUPER::end_document();
+HTTP::OAI::Debug::sax( Dumper($_[1]) );
 }
 
 # Char data is rolled together by this module
 sub characters {
 	my ($self,$hash) = @_;
 	$self->{Text} .= $hash->{Data};
-warn "characters: ".substr($hash->{Data}||'',0,40)."...\n" if $DEBUG;
+# characters are traced in {start,end}_element
+#HTTP::OAI::Debug::sax( "'" . substr($hash->{Data},0,40) . "'" );
 }
 
 sub start_element {
@@ -133,14 +130,16 @@ sub start_element {
 	push @{$self->{Attributes}}, $hash->{Attributes};
 	
 	# Call characters with the joined character data
-warn "start_element=>characters: ".substr($self->{Text}||'',0,40)."...\n" if $DEBUG && defined($self->{Text});
-	$self->SUPER::characters({Data=>$self->{Text}}) if defined($self->{Text});
-	$self->{Text} = undef;
+	if( defined($self->{Text}) )
+	{
+HTTP::OAI::Debug::sax( "'".substr($self->{Text},0,40) . "'" );
+		$self->SUPER::characters({Data=>$self->{Text}});
+		$self->{Text} = undef;
+	}
 
-warn "start_element: $hash->{Name}\n" if $DEBUG;
-warn "(".Dumper($hash).")\n" if $DEBUG >= 2;
 	$hash->{State} = $self;
 	$hash->{Depth} = ++$self->{Depth};
+HTTP::OAI::Debug::sax( (" " x $hash->{Depth}) . '<'.$hash->{Name}.'>' );
 	$self->SUPER::start_element($hash);
 }
 
@@ -148,93 +147,79 @@ sub end_element {
 	my ($self,$hash) = @_;
 
 	# Call characters with the joined character data
-warn "end_element=>characters: ".substr($self->{Text}||'',0,40)."...\n" if $DEBUG && defined($self->{Text});
-	$self->SUPER::characters({Data=>$self->{Text}}) if defined($self->{Text}) && $self->{Text} =~ /\S/; # Trailing whitespace causes problems
 	$hash->{Text} = $self->{Text};
-	$self->{Text} = undef;
+	if( defined($self->{Text}) )
+	{
+		# Trailing whitespace causes problems
+		if( $self->{Text} =~ /\S/ )
+		{
+HTTP::OAI::Debug::sax( "'".substr($self->{Text},0,40) . "'" );
+			$self->SUPER::characters({Data=>$self->{Text}});
+		}
+		$self->{Text} = undef;
+	}
 	
-warn "end_element: $hash->{Name}\n" if $DEBUG;
 	$hash->{Attributes} = pop @{$self->{Attributes}} || {};
-warn "(".Dumper($hash).")\n" if $DEBUG >= 2;
 	$hash->{State} = $self;
 	$hash->{Depth} = $self->{Depth}--;
+HTTP::OAI::Debug::sax( (" " x $hash->{Depth}) . '  <'.$hash->{Name}.'>' );
 	$self->SUPER::end_element($hash);
 }
 
 sub entity_reference {
 	my ($self,$hash) = @_;
-	my $name = $hash->{Name};
-warn "entity_reference: $name\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $hash->{Name} );
 }
 
 sub start_cdata {
-	my $self = shift;
-warn "start_cdata\n" if $DEBUG;
+HTTP::OAI::Debug::sax();
 }
 
 sub end_cdata {
-	my $self = shift;
-warn "end_cdata\n" if $DEBUG;
+HTTP::OAI::Debug::sax();
 }
 
 sub comment {
-	my ($self,$hash) = @_;
-	my $data = $hash->{Data};
-warn "comment: $data\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $_[1]->{Data} );
 }
 
 sub doctype_decl {
-	my ($self,$hash) = @_;
-	my $name = $hash->{Name};
 	# {SystemId,PublicId,Internal}
-warn "doctype_decl: $hash->{Name}\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $_[1]->{Name} );
 }
 
 sub attlist_decl {
-	my ($self,$hash) = @_;
-	my $elementname = $hash->{ElementName};
 	# {ElementName,AttributeName,Type,Default,Fixed}
-warn "attlist_decl: $elementname\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $_[1]->{ElementName} );
 }
 
 sub xml_decl {
-	my ($self,$hash) = @_;
-#	my $version = $hash->{Version};
-#	my $encoding = $hash->{Encoding};
-#	my $standalone = $hash->{Standalone};
-warn "xml_decl: ".Dumper($hash) if $DEBUG;
+	# {Version,Encoding,Standalone}
+HTTP::OAI::Debug::sax( join ", ", map { defined($_) ? $_ : "null" } @{$_[1]}{qw( Version Encoding Standalone )} );
 }
 
 sub entity_decl {
-	my ($self,$hash) = @_;
-	my $name = $hash->{Name};
 	# {Value,SystemId,PublicId,Notation}
-warn "entity_decl: $name\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $_[1]->{Name} );
 }
 
 sub unparsed_decl {
-	my ($self,$hash) = @_;
-warn "unparsed_decl\n" if $DEBUG;
+HTTP::OAI::Debug::sax();
 }
 
 sub element_decl {
-	my ($self,$hash) = @_;
-	my $name = $hash->{Name};
 	# {Model}
-warn "element_decl: $name\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $_[1]->{Name} );
 }
 
 sub notation_decl {
-	my ($self,$hash) = @_;
-	my $name = $hash->{Name};
 	# {Name,Base,SystemId,PublicId}
-warn "notation_decl: $name\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $_[1]->{Name} );
 }
 
 sub processing_instruction {
-	my ($self, $hash) = @_;
 	# {Target,Data}
-warn "processing_instruction: ".Dumper($hash)."\n" if $DEBUG;
+HTTP::OAI::Debug::sax( $_[1]->{Target} . " => " . $_[1]->{Data} );
 }
 
 package HTTP::OAI::FilterDOMFragment;
