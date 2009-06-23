@@ -1,11 +1,13 @@
 bin/oai_browser.pl
 bin/oai_static_gateway.pl
 CHANGES
+examples/badbytes.xml
 examples/getrecord.xml
 examples/identify.xml
 examples/mets.xml
 examples/repository.xml
 lib/HTTP/OAI.pm
+lib/HTTP/OAI/Debug.pm
 lib/HTTP/OAI/Encapsulation.pm
 lib/HTTP/OAI/Error.pm
 lib/HTTP/OAI/GetRecord.pm
@@ -35,10 +37,13 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 META.yml
+pm_to_blib
 README
+t/000xml_sax.t
 t/00static.t
 t/01parse.t
 t/02token.t
+t/03badbytes.t
 t/50mets.t
 t/80network.t
 t/error.t
