@@ -158,13 +158,18 @@ sub start_element {
 
 	# Root element
 	unless( defined($self->header('version')) ) {
-		my $xmlns = $attr->{'{}xmlns'};
-		unless(
-			defined($xmlns) &&
-			defined($xmlns->{'Value'}) &&
-			$self->header('version',$VERSIONS{lc($xmlns->{'Value'})})
-		) {
-			die "Error parsing response: Unknown or unsupported OAI version (" . ($attr->{'{}xmlns'}->{'Value'} || 'No xmlns given') . ").";
+		my $xmlns = $hash->{NamespaceURI};
+		if( !defined($xmlns) || !length($xmlns) )
+		{
+			die "Error parsing response: no namespace on root element";
+		}
+		elsif( !exists $VERSIONS{lc($xmlns)} )
+		{
+			die "Error parsing response: unrecognised OAI namespace '$xmlns'";
+		}
+		else
+		{
+			$self->header('version',$VERSIONS{lc($xmlns)})
 		}
 	}
 	# With a static repository, don't process any headers

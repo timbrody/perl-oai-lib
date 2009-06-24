@@ -1,8 +1,6 @@
-use Test;
+use Test::More tests => 20;
 
 use strict;
-
-BEGIN { plan tests => 20 }
 
 use HTTP::OAI;
 ok(1);
@@ -13,14 +11,19 @@ ok(1);
 my $fn = "file:".$ENV{PWD}."/examples/repository.xml";
 my $repo = HTTP::OAI::Harvester->new(baseURL=>$fn);
 ok($repo);
-ok($repo->Identify->version eq '2.0s');
-# Removed this test, as paths screw up too much
-#ok($repo->Identify->baseURL && $repo->Identify->baseURL eq 'file:///examples/repository.xml');
 
 # Identify
 my $id = $repo->Identify;
+if( !$id->is_success )
+{
+	BAIL_OUT( "Error parsing static repository: " . $id->message );
+}
 ok($id->is_success);
 ok($id->repositoryName && $id->repositoryName eq 'Demo repository');
+
+ok($repo->Identify->version eq '2.0s');
+# Removed this test, as paths screw up too much
+#ok($repo->Identify->baseURL && $repo->Identify->baseURL eq 'file:///examples/repository.xml');
 
 # ListMetadataFormats
 my $lmdf = $repo->ListMetadataFormats;

@@ -125,7 +125,7 @@ sub parse_file {
 	$self->code(200);
 	$self->message('parse_file');
 	
-	my $parser = XML::SAX::ParserFactory->parser(
+	my $parser = XML::LibXML::SAX->new(
 		Handler=>HTTP::OAI::SAXHandler->new(
 			Handler=>$self->headers
 	));
@@ -161,7 +161,7 @@ sub parse_string {
 	$self->code(200);
 	$self->message('parse_string');
 	do {
-		my $parser = XML::SAX::ParserFactory->parser(
+		my $parser = XML::LibXML::SAX->new(
 			Handler=>HTTP::OAI::SAXHandler->new(
 				Handler=>$self->headers
 		));

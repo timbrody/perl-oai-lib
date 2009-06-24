@@ -1,4 +1,8 @@
 3.22
+	- use XML::SAX::Parser rather than ParserFactory
+	- test the namespace on NamespaceURI rather than the XMLNS attribute, which
+	  is reported differently between XML::LibXML::SAX and
+	  XML::LibXML::SAX::Parser
 	- added debug class HTTP::OAI::Debug
 	- added check in 01parse test case for file open
 	- added 000xml_sax.pl test case for basic XML::SAX function

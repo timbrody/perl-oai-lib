@@ -37,7 +37,6 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 META.yml
-pm_to_blib
 README
 t/000xml_sax.t
 t/00static.t
