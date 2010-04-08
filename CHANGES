@@ -1,3 +1,8 @@
+3.23
+	- Changed license to BSD
+	- Added dependency for XML::SAX rt #43287
+	- Fixed some POD issues rt #51853
+
 3.22
 	- use XML::SAX::Parser rather than ParserFactory
 	- test the namespace on NamespaceURI rather than the XMLNS attribute, which

@@ -274,11 +274,19 @@ This constructor method returns a new instance of a HTTP::OAI::UserAgent module.
 
 Requests the HTTP response defined by $req, which is a L<HTTP::Request|HTTP::Request> object.
 
-=item $r = $ua->request(baseURL=>$baseref,verb=>$verb,[from=>$from],[until=>$until],[resumptionToken=>$token],[metadataPrefix=>$mdp],[set=>$set],[oainame=>$oaivalue],...)
+=item $r = $ua->request(baseURL=>$baseref, verb=>$verb, %opts)
 
-Makes an HTTP request to the given OAI server (baseURL) with OAI arguments. Returns an HTTP::Response object.
+Makes an HTTP request to the given OAI server (baseURL) with OAI arguments. Returns an L<HTTP::Response> object.
 
-=item $str = $ua->url(baseURL=>$baseref,verb=>$verb,...)
+OAI-PMH related options:
+
+	from => $from
+	until => $until
+	resumptionToken => $token
+	metadataPrefix => $mdp
+	set => $set
+
+=item $str = $ua->url(baseURL=>$baseref, verb=>$verb, ...)
 
 Takes the same arguments as request, but returns the URL that would be requested.
 

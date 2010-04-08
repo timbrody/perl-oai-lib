@@ -15,6 +15,7 @@ WriteMakefile(
 				'XML::LibXML' => 1.60,
 				'XML::LibXML::SAX' => 0,
 				'XML::SAX::Base' => 1.00,
+				'XML::SAX' => 0,
 				'URI' => 0,
 				'HTTP::Request' => 0,
 				'HTTP::Response' => 0,

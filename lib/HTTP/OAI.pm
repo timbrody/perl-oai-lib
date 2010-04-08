@@ -2,7 +2,7 @@ package HTTP::OAI;
 
 use strict;
 
-our $VERSION = '3.22';
+our $VERSION = '3.23';
 
 # perlcore
 use Carp;
@@ -76,16 +76,21 @@ HTTP::OAI - API for the OAI-PMH
 
 =head1 DESCRIPTION
 
-This is a stub module, you probably want to look at L<HTTP::OAI::Harvester|HTTP::OAI::Harvester> or L<HTTP::OAI::Repository|HTTP::OAI::Repository>.
+This is a stub module, you probably want to look at
+L<HTTP::OAI::Harvester|HTTP::OAI::Harvester> or
+L<HTTP::OAI::Repository|HTTP::OAI::Repository>.
 
 =head1 SEE ALSO
 
-You can find links to this and other OAI tools (perl, C++, java) at: http://www.openarchives.org/tools/tools.html.
+You can find links to this and other OAI tools (perl, C++, java) at:
+http://www.openarchives.org/tools/tools.html.
 
 Ed Summers L<Net::OAI::Harvester> module.
 
 =head1 AUTHOR
 
-Copyright 2004 Tim Brody <tdb01r@ecs.soton.ac.uk>
+Copyright 2004-2010 Tim Brody <tdb2@ecs.soton.ac.uk>, University of
+Southampton.
 
-These modules are distributed under the same terms as Perl.
+This module is free software and is released under the BSD License (see
+LICENSE).

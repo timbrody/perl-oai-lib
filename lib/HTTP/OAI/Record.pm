@@ -112,9 +112,15 @@ HTTP::OAI::Record - Encapsulates an OAI record
 
 =over 4
 
-=item $r = new HTTP::OAI::Record([header=>$header],[metadata=>$metadata],[about=>[$about]])
+=item $r = new HTTP::OAI::Record( %opts )
 
-This constructor method returns a new C<HTTP::OAI::Record object>. Optionally set the header, metadata, and add an about.
+This constructor method returns a new L<HTTP::OAI::Record> object.
+
+Options (see methods below):
+
+	header => $header
+	metadata => $metadata
+	about => [$about]
 
 =item $r->header([HTTP::OAI::Header])
 
@@ -132,7 +138,7 @@ Optionally adds a new About record (an L<HTTP::OAI::Metadata> object) and return
 
 =head2 Header Accessor Methods
 
-These methods are equivalent to C<$rec->header->$method([$value])>.
+These methods are equivalent to C<< $rec->header->$method([$value]) >>.
 
 =over 4
 

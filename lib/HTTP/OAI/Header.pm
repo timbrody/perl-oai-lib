@@ -156,6 +156,6 @@ Returns the list of setSpecs and optionally appends a new setSpec C<$setSpec> (O
 
 =item $dom_fragment = $id->generate()
 
-Act as a SAX driver (use C<$h->set_handler()> to specify the filter to pass events to).
+Act as a SAX driver (use C<< $h->set_handler() >> to specify the filter to pass events to).
 
 =back
