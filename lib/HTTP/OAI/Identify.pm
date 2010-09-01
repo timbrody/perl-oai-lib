@@ -71,7 +71,7 @@ sub generate_body {
 	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','protocolVersion',{},$self->protocolVersion);
 	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','adminEmail',{},$_) for $self->adminEmail;
 	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','earliestDatestamp',{},$self->earliestDatestamp||'0001-01-01');
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','deletedRecord',{},$self->deletedRecord||'none');
+	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','deletedRecord',{},$self->deletedRecord||'no');
 	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','granularity',{},$self->granularity) if defined($self->granularity);
 	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','compression',{},$_) for $self->compression;
 

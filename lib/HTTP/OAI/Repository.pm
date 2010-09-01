@@ -216,7 +216,7 @@ Using the OAI-PERL library in a repository context requires the user to build th
 	# Include a description (an XML::LibXML Dom object)
 	$r->description(new HTTP::OAI::Metadata(dom=>$dom));
 
-	my $r = HTTP::OAI::GetRecord->new(
+	my $r = HTTP::OAI::Record->new(
 		header=>HTTP::OAI::Header->new(
 			identifier=>'oai:myrepo:10',
 			datestamp=>'2004-10-01'
