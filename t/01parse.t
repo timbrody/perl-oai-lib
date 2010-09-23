@@ -1,4 +1,4 @@
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 use IO::File;
 use HTTP::OAI;
@@ -18,6 +18,11 @@ $fh->close();
 my $rec = $r->next;
 ok($rec);
 ok($rec->metadata->dc->{creator}->[0] eq 'Aspinwall, Paul S.');
+
+my $dom = $rec->metadata->dom;
+my $md = HTTP::OAI::Metadata::OAI_DC->new;
+$md->metadata( $dom );
+ok($md->dc->{creator}->[0] eq 'Aspinwall, Paul S.');
 
 $r = HTTP::OAI::Identify->new();
 $fh = IO::File->new('examples/identify.xml','r')
