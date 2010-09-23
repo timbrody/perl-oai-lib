@@ -1,39 +1,72 @@
 package HTTP::OAI::Metadata::OAI_DC;
 
-use strict;
-use warnings;
-
+use XML::LibXML;
 use HTTP::OAI::Metadata;
-
-use vars qw(@ISA @DC_TERMS);
-
 @ISA = qw(HTTP::OAI::Metadata);
 
-use XML::LibXML;
+use strict;
 
-@DC_TERMS = qw( contributor coverage creator date description format identifier language publisher relation rights source subject title type );
+our $OAI_DC_SCHEMA = 'http://www.openarchives.org/OAI/2.0/oai_dc/';
+our $DC_SCHEMA = 'http://purl.org/dc/elements/1.1/';
+our @DC_TERMS = qw( contributor coverage creator date description format identifier language publisher relation rights source subject title type );
 
 sub new {
-	my $class = shift;
-	my $self = $class->SUPER::new(@_);
-	my %args = @_;
-	if( exists $args{dc} && ref($args{dc}) eq 'HASH' ) {
+	my( $class, %self ) = @_;
+
+	my $self = $class->SUPER::new( %self );
+
+	if( exists $self{dc} && ref($self{dc}) eq 'HASH' )
+	{
 		my ($dom,$dc) =_oai_dc_dom();
-		for(keys %{$args{dc}}) {
-			$self->{dc}->{lc($_)} = $args{dc}->{$_};
-			foreach my $value (@{$args{dc}->{$_}}) {
-				$dc->appendChild($dom->createElement("dc:".lc($_)))->appendChild($dom->createTextNode($value));
+		foreach my $term (@DC_TERMS)
+		{
+			foreach my $value (@{$self{dc}->{$term}||[]})
+			{
+				$dc->appendChild($dom->createElementNS($DC_SCHEMA, $term))->appendText( $value );
 			}
 		}
 		$self->dom($dom);
 	}
-	for(@DC_TERMS) {
-		$self->{dc}->{$_} ||= [];
-	}
+
 	$self;
 }
 
-sub dc { shift->{dc} }
+sub dc
+{
+	my( $self ) = @_;
+
+	my $dom = $self->dom;
+	my $metadata = $dom->documentElement;
+
+	return $self->{dc} if defined $self->{dc};
+
+	my %dc = map { $_ => [] } @DC_TERMS;
+
+	$self->_dc( $metadata, \%dc );
+
+	return \%dc;
+}
+
+sub _dc
+{
+	my( $self, $node, $dc ) = @_;
+
+	my $ns = $node->getNamespaceURI;
+	$ns =~ s/\/?$/\//;
+
+	if( $ns eq $DC_SCHEMA )
+	{
+		push @{$dc->{lc($node->localName)}}, $node->textContent;
+	}
+	elsif( $node->hasChildNodes )
+	{
+		for($node->childNodes)
+		{
+			next if $_->nodeType != XML_ELEMENT_NODE;
+			$self->_dc( $_, $dc );
+		}
+	}
+}
 
 sub _oai_dc_dom {
 	my $dom = XML::LibXML->createDocument();
@@ -46,34 +79,25 @@ sub _oai_dc_dom {
 }
 
 sub metadata { 
-	my $self = shift;
-	return $self->dom() unless @_;
-	my $md = shift or return $self->dom(undef);
-#	unless(my @nodes = $md->findnodes("*/*[local-name()='oai_dc' and namespace:uri()='http://purl.org/dc/elements/1.1/']")) {
-	my $oai_dc;
-	foreach my $nameSpace (qw(
-		http://www.openarchives.org/OAI/2.0/oai_dc/
-		http://purl.org/dc/elements/1.1/
-	)) {
-		foreach my $tagName (qw(dc oai_dc)) {
-			($oai_dc) = $md->getElementsByTagNameNS($nameSpace,$tagName);
-			last if $oai_dc;
+	my( $self, $md ) = @_;
+
+	return $self->dom if @_ == 1;
+
+	delete $self->{dc};
+	$self->dom( $md );
+
+	return if !defined $md;
+
+	my $dc = $self->dc;
+
+	my ($dom,$metadata) = _oai_dc_dom();
+
+	foreach my $term (@DC_TERMS)
+	{
+		foreach my $value (@{$dc->{$term}})
+		{
+			$metadata->appendChild( $dom->createElementNS( $DC_SCHEMA, $term ) )->appendText( $value );
 		}
-		last if $oai_dc;
-	}
-	unless( defined($oai_dc) ) {
-		die "Unable to locate OAI Dublin Core in:\n".$md->toString;
-		return $self->dom(undef);
-	}
-	$md = $oai_dc;
-
-	my ($dom,$dc) = _oai_dc_dom();
-
-	for ($md->getChildNodes) {
-		next unless $_->nodeType == XML_ELEMENT_NODE;
-		next unless $_->hasChildNodes;
-		next unless ($_->getFirstChild->nodeType == XML_TEXT_NODE || $_->getFirstChild->nodeType == XML_CDATA_SECTION_NODE);
-		$dc->appendChild($dom->createElement("dc:".$_->localName))->appendChild($dom->createTextNode($_->getFirstChild->toString));
 	}
 
 	$self->dom($dom)
