@@ -21,6 +21,8 @@ unless( $@ ) {
 	$ACCEPT = "gzip";
 }
 
+sub delay { shift->_elem( "delay", @_ ) }
+
 sub redirect_ok { 1 }
 
 sub request
@@ -30,6 +32,17 @@ sub request
 	if( ref($request) eq 'HASH' ) {
 		$request = HTTP::Request->new(GET => _buildurl(%$request));
 	}
+
+	my $delay = $self->delay;
+	if( defined $delay )
+	{
+		if( ref($delay) eq "CODEREF" )
+		{
+			$delay = &$delay();
+		}
+		select(undef,undef,undef,$delay) if $delay > 0;
+	}
+
 	return $self->SUPER::request(@_) unless $response;
 	my $parser = XML::LibXML->new(
 		Handler => HTTP::OAI::SAXHandler->new(
@@ -289,5 +302,9 @@ OAI-PMH related options:
 =item $str = $ua->url(baseURL=>$baseref, verb=>$verb, ...)
 
 Takes the same arguments as request, but returns the URL that would be requested.
+
+=item $time_d = $ua->delay( $time_d )
+
+Return and optionally set a time (in seconds) to wait between requests. $time_d may be a CODEREF.
 
 =back

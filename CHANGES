@@ -1,3 +1,6 @@
+3.26
+	- Added 'delay' option to delay between requests
+
 3.25
 	- Added unit test for OAI_DC metadata() parsing
 	- Metadata::OAI_DC now parses dc when passed as a DOM to ->metadata
