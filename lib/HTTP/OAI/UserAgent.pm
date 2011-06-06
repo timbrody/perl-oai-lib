@@ -36,7 +36,7 @@ sub request
 	my $delay = $self->delay;
 	if( defined $delay )
 	{
-		if( ref($delay) eq "CODEREF" )
+		if( ref($delay) eq "CODE" )
 		{
 			$delay = &$delay();
 		}
