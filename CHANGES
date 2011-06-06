@@ -1,3 +1,10 @@
+3.25
+	- Added unit test for OAI_DC metadata() parsing
+	- Metadata::OAI_DC now parses dc when passed as a DOM to ->metadata
+
+3.24
+	- Fixed CPAN bugs #60760 and #60856
+
 3.23
 	- Changed license to BSD
 	- Added dependency for XML::SAX rt #43287
