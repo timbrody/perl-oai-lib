@@ -22,6 +22,7 @@ unless( $@ ) {
 }
 
 sub delay { shift->_elem( "delay", @_ ) }
+sub last_request_completed { shift->_elem( "last_request_completed", @_ ) }
 
 sub redirect_ok { 1 }
 
@@ -38,12 +39,18 @@ sub request
 	{
 		if( ref($delay) eq "CODE" )
 		{
-			$delay = &$delay();
+			$delay = &$delay( $self->last_request_completed );
 		}
 		select(undef,undef,undef,$delay) if $delay > 0;
 	}
 
-	return $self->SUPER::request(@_) unless $response;
+	if( !defined $response )
+	{
+		$response = $self->SUPER::request(@_);
+		$self->last_request_completed( time );
+		return $response;
+	}
+
 	my $parser = XML::LibXML->new(
 		Handler => HTTP::OAI::SAXHandler->new(
 			Handler => $response->headers
@@ -85,6 +92,7 @@ HTTP::OAI::Debug::trace( $response->verb . " " . ref($parser) . "->parse_chunk()
 
 	# OAI retry-after
 	if( defined($r) && $r->code == 503 && defined(my $timeout = $r->headers->header('Retry-After')) ) {
+		$self->last_request_completed( time );
 		if( $self->{recursion}++ > 10 ) {
 			$self->{recursion} = 0;
 			warn ref($self)."::request (retry-after) Given up requesting after 10 retries\n";
@@ -99,6 +107,7 @@ HTTP::OAI::Debug::trace( "Waiting $timeout seconds" );
 		return $self->request($request,undef,undef,undef,$response);
 	# Got an empty response
 	} elsif( defined($r) && $r->is_success && $cnt_len == 0 ) {
+		$self->last_request_completed( time );
 		if( $self->{recursion}++ > 10 ) {
 			$self->{recursion} = 0;
 			warn ref($self)."::request (empty response) Given up requesting after 10 retries\n";
@@ -130,6 +139,9 @@ HTTP::OAI::Debug::trace( "Retrying on empty response" );
 	# Copy original $request => OAI $response to allow easy
 	# access to the requested URL
 	$response->request($request);
+
+	$self->last_request_completed( time );
+
 	$response;
 }
 
