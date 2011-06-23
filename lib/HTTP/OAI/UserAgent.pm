@@ -68,7 +68,7 @@ HTTP::OAI::Debug::trace( $response->verb . " " . ref($parser) . "->parse_chunk()
 		$r = $self->SUPER::request($request,sub {
 			$self->lwp_callback( $parser, @_ )
 		});
-		$self->lwp_endparse( $parser );
+		$self->lwp_endparse( $parser ) if $r->is_success;
 	}
 	if( defined($r) && defined($r->headers->header( 'Client-Aborted' )) && $r->headers->header( 'Client-Aborted' ) eq 'die' )
 	{
