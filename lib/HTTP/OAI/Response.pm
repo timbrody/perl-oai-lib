@@ -168,12 +168,15 @@ sub parse_string {
 HTTP::OAI::Debug::trace( $self->verb . " " . ref($parser) . "->parse_string(...)" );
 
 		$self->headers->set_handler($self);
-		$USE_EVAL ?
-			eval { $parser->parse_string($str) } :
-			$parser->parse_string($str);
+		eval {
+			local $SIG{__DIE__};
+			$parser->parse_string( $str )
+		};
 		$self->headers->set_handler(undef);
+		undef $@ if $@ && $@ =~ /^done\n/;
 
 		if( $@ ) {
+			die $@ if !$USE_EVAL; # rethrow
 			$self->errors(new HTTP::OAI::Error(
 				code=>'parseError',
 				message=>"Error while parsing XML: $@",

@@ -39,8 +39,8 @@ sub generate_body {
 
 sub start_element {
 	my ($self,$hash) = @_;
-	my $elem = lc($hash->{LocalName});
 	if( !$self->{'in_record'} ) {
+		my $elem = lc($hash->{LocalName});
 		if( $elem eq 'record' ) {
 			$self->set_handler(new HTTP::OAI::Record(
 					version=>$self->version,
@@ -59,10 +59,11 @@ sub start_element {
 
 sub end_element {
 	my ($self,$hash) = @_;
-	my $elem = lc($hash->{LocalName});
 	$self->SUPER::end_element($hash);
 	if( $self->{'in_record'} == $hash->{Depth} ) {
+		my $elem = lc($hash->{LocalName});
 		if( $elem eq 'record' ) {
+HTTP::OAI::Debug::trace( "record: " . $self->get_handler->identifier );
 			$self->record( $self->get_handler );
 			$self->set_handler( undef );
 			$self->{'in_record'} = 0;

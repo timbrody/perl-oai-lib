@@ -63,14 +63,8 @@ sub request
 	$response->headers->set_handler($response);
 HTTP::OAI::Debug::trace( $response->verb . " " . ref($parser) . "->parse_chunk()" );
 	my $r;
-	if( $USE_EVAL ) {
-		eval {
-			$r = $self->SUPER::request($request,sub {
-				$self->lwp_callback( $parser, @_ )
-			});
-			$self->lwp_endparse( $parser );
-		};
-	} else {
+	{
+		local $SIG{__DIE__};
 		$r = $self->SUPER::request($request,sub {
 			$self->lwp_callback( $parser, @_ )
 		});
@@ -78,8 +72,12 @@ HTTP::OAI::Debug::trace( $response->verb . " " . ref($parser) . "->parse_chunk()
 	}
 	if( defined($r) && defined($r->headers->header( 'Client-Aborted' )) && $r->headers->header( 'Client-Aborted' ) eq 'die' )
 	{
-		$r->code(500);
-		$r->message( 'An error occurred while parsing: ' . $r->headers->header( 'X-Died' ));
+		my $err = $r->headers->header( 'X-Died' );
+		if( $err !~ /^done\n/ )
+		{
+			$r->code(500);
+			$r->message( 'An error occurred while parsing: ' . $err );
+		}
 	}
 
 	$response->headers->set_handler(undef);

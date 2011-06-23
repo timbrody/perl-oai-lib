@@ -97,6 +97,11 @@ sub end_element {
 	my ($self,$hash) = @_;
 	my $elem = $hash->{LocalName};
 	my $text = $hash->{Text};
+	if( defined $text )
+	{
+		$text =~ s/^\s+//;
+		$text =~ s/\s+$//;
+	}
 	if( defined($self->get_handler) ) {
 		if( $elem eq 'description' && $self->{"in_$elem"} == $hash->{Depth} ) {
 			$self->SUPER::end_document();

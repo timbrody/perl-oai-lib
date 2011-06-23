@@ -19,6 +19,8 @@ sub new {
 	$self->metadata($args{metadata}) unless defined($self->metadata);
 	$self->{about} = $args{about} || [] unless defined($self->{about});
 
+	$self->{in_record} = 0;
+
 	$self->header(new HTTP::OAI::Header(%args)) unless defined $self->header;
 
 	$self;
@@ -51,37 +53,31 @@ sub generate {
 
 sub start_element {
 	my ($self,$hash) = @_;
+	return $self->SUPER::start_element( $hash ) if $self->{in_record};
 	my $elem = lc($hash->{LocalName});
-	die "Internal Error" unless $self->version;
-	if( defined($self->get_handler) ) {
-		if( exists($self->{"in_$elem"}) ) {
-			$self->{"in_$elem"}++;
-		}
-	} elsif( $elem eq 'record' && $self->version eq '1.1' ) {
+	if( $elem eq 'record' && $self->version eq '1.1' ) {
 		$self->status($hash->{Attributes}->{'{}status'}->{Value});
-	} elsif( $elem =~ /^header|metadata|about$/ ) {
-		my $handler = $self->{handlers}->{$elem}->new() or
-			die sprintf("Error getting handler for <%s> (failed to create new %s)", $elem, $self->{handlers}->{$elem});
-		$self->set_handler($handler);
-		$self->$elem($handler);
-		$self->{"in_$elem"} = $hash->{Depth};
-		g_start_document( $handler );
 	}
-	$self->SUPER::start_element($hash);
+	elsif( $elem =~ /^header|metadata|about$/ ) {
+		my $handler = $self->{handlers}->{$elem}->new()
+			or die "Error getting handler for <$elem> (failed to create new $self->{handlers}->{$elem})";
+		$self->set_handler($handler);
+		$self->{in_record} = $hash->{Depth};
+		g_start_document( $handler );
+		$self->SUPER::start_element( $hash );
+	}
 }
 
 sub end_element {
 	my ($self,$hash) = @_;
-	my $elem = lc($hash->{LocalName});
 	$self->SUPER::end_element($hash);
-	if( exists($self->{"in_$elem"}) ) {
-		if( $self->{"in_$elem"} == $hash->{Depth} ) {
-			$self->SUPER::end_document();
-			$self->set_handler(undef);
-			delete $self->{"in_$elem"};
-		} else {
-			$self->{"in_$elem"}--;
-		}
+	if( $self->{in_record} == $hash->{Depth} ) {
+		$self->SUPER::end_document();
+
+		my $elem = lc ($hash->{LocalName});
+		$self->$elem ($self->get_handler);
+		$self->set_handler ( undef );
+		$self->{in_record} = 0;
 	}
 }
 

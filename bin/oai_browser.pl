@@ -130,9 +130,9 @@ while(1) {
 #	my $burl = input('Enter the base URL to use [http://cogprints.soton.ac.uk/perl/oai2]: ') || 'http://cogprints.soton.ac.uk/perl/oai2';
 	my $burl = shift || $TERM->readline('OAI Base URL to query>','http://cogprints.soton.ac.uk/perl/oai2') || next;
 	$h = new HTTP::OAI::Harvester(baseURL=>$burl);
-	if( my $r = Identify() ) {
-		$h->repository($r);
-		$PROTOCOL_VERSION = $r->version;
+	if( my $id = Identify() ) {
+		$h->repository($id);
+		$PROTOCOL_VERSION = $id->version;
 		last;
 	}
 }

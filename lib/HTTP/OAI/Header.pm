@@ -94,6 +94,11 @@ sub end_element {
 	my ($self,$hash) = @_;
 	my $elem = lc($hash->{LocalName});
 	my $text = $hash->{Text};
+	if( defined $text )
+	{
+		$text =~ s/^\s+//;
+		$text =~ s/\s+$//;
+	}
 	if( $elem eq 'identifier' ) {
 		die "HTTP::OAI::Header parse error: Empty identifier\n" unless $text;
 		$self->identifier($text);

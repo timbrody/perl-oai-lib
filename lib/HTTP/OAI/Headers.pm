@@ -205,6 +205,7 @@ sub end_element {
 			$hash->{NamespaceURI} eq 'http://www.openarchives.org/OAI/2.0/static-repository'
 		) {
 			$self->{State} = 0;
+			die "done\n\n";
 		}
 		return $self->{State} ?
 			$self->SUPER::end_element($hash) :

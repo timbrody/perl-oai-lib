@@ -11,6 +11,7 @@ sub new {
 	my $class = shift;
 	my $self = $class->SUPER::new(@_);
 	$self->{'metadataFormat'} ||= [];
+	$self->{in_mdf} = 0;
 	$self->verb('ListMetadataFormats') unless $self->verb;
 
 	$self;
@@ -38,12 +39,26 @@ sub generate_body {
 
 sub start_element {
 	my ($self,$hash) = @_;
-	if( lc($hash->{LocalName}) eq 'metadataformat' ) {
-		my $mdf = new HTTP::OAI::MetadataFormat();
-		$self->metadataFormat($mdf);
-		$self->set_handler($mdf);
+	if( !$self->{'in_mdf'} ) {
+		if( lc($hash->{LocalName}) eq 'metadataformat' ) {
+			$self->set_handler(new HTTP::OAI::MetadataFormat());
+			$self->{'in_mdf'} = $hash->{Depth};
+		}
 	}
 	$self->SUPER::start_element($hash);
+}
+
+sub end_element {
+	my ($self,$hash) = @_;
+	$self->SUPER::end_element($hash);
+	if( $self->{'in_mdf'} == $hash->{Depth} ) {
+		if( lc($hash->{LocalName}) eq 'metadataformat' ) {
+HTTP::OAI::Debug::trace( "metadataFormat: " . $self->get_handler->metadataPrefix );
+			$self->metadataFormat( $self->get_handler );
+			$self->set_handler( undef );
+			$self->{'in_mdf'} = 0;
+		}
+	}
 }
 
 1;

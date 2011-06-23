@@ -142,6 +142,7 @@ sub _oai {
 				metadataPrefix=>$_->metadataPrefix,
 			};
 			$lr->parse_string($self->{_static});
+			return $lr if !$lr->is_success;
 			@{$self->{_records}->{$_->metadataPrefix}} = $lr->record;
 		}
 		undef($self->{_static});
@@ -216,6 +217,7 @@ HTTP::OAI::Debug::trace($self->baseURL);
 		$self->{_static} = $r->content;
 		$self->repository($id);
 	}
+HTTP::OAI::Debug::trace("version = ".$id->version) if $id->is_success;
 }
 
 1;

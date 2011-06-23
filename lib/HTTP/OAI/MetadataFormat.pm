@@ -51,6 +51,8 @@ sub end_element {
 	my ($self,$hash) = @_;
 	$self->SUPER::end_element($hash);
 	my $elem = lc($hash->{LocalName});
+	$hash->{Text} =~ s/^\s+//;
+	$hash->{Text} =~ s/\s+$//;
 	if( $elem eq 'metadataprefix' ) {
 		$self->metadataPrefix($hash->{Text});
 	} elsif( $elem eq 'schema' ) {
