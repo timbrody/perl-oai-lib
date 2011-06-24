@@ -103,7 +103,7 @@ sub end_element {
 		die "HTTP::OAI::Header parse error: Empty identifier\n" unless $text;
 		$self->identifier($text);
 	} elsif( $elem eq 'datestamp' ) {
-		warn "HTTP::OAI::Header parse warning: Empty datestamp\n" unless $text;
+		warn "HTTP::OAI::Header parse warning: Empty datestamp for ".$self->identifier."\n" unless $text;
 		$self->datestamp($text);
 	} elsif( $elem eq 'setspec' ) {
 		$self->setSpec($text);
