@@ -1,5 +1,9 @@
 3.26
 	- Added 'delay' option to delay between requests
+	- Added --skip-identify option to oai_browser.pl
+	- Fixed POD for RT #64077
+	- Hopefully fixes #69337 (no test case given)
+	- Bumped XML::SAX::Base to 1.04 which should fix #68907
 
 3.25
 	- Added unit test for OAI_DC metadata() parsing

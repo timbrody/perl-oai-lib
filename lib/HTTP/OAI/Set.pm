@@ -87,7 +87,7 @@ HTTP::OAI::Set - Encapsulates OAI set XML data
 
 These methods return respectively, the setSpec and setName of the OAI Set.
 
-=item $descs = $s->setDescription([$desc])
+=item @descs = $s->setDescription([$desc])
 
 Returns and optionally adds the list of set descriptions. Returns a reference to an array of L<HTTP::OAI::Description|HTTP::OAI::Description> objects.
 
