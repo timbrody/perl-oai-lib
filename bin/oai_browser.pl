@@ -43,6 +43,10 @@ Turn on trace debugging.
 
 Turn on trace debugging of SAX calls.
 
+=item B<--skip-identify>
+
+Don't perform an initial Identify to check the repository's baseURL.
+
 =cut
 
 BEGIN {
@@ -89,13 +93,14 @@ if( $@ )
 use HTTP::OAI::Harvester;
 use HTTP::OAI::Metadata::OAI_DC;
 
-my ($opt_silent, $opt_help, $opt_trace, $opt_tracesax);
+my ($opt_silent, $opt_help, $opt_trace, $opt_tracesax, $opt_skip_identify);
 $opt_silent = 0;
 GetOptions (
 	'silent' => \$opt_silent,
 	'help' => \$opt_help,
 	'trace' => \$opt_trace,
 	'tracesax' => \$opt_tracesax,
+	'skip-identify' => \$opt_skip_identify,
 );
 
 pod2usage(1) if $opt_help;
@@ -130,6 +135,7 @@ while(1) {
 #	my $burl = input('Enter the base URL to use [http://cogprints.soton.ac.uk/perl/oai2]: ') || 'http://cogprints.soton.ac.uk/perl/oai2';
 	my $burl = shift || $TERM->readline('OAI Base URL to query>','http://cogprints.soton.ac.uk/perl/oai2') || next;
 	$h = new HTTP::OAI::Harvester(baseURL=>$burl);
+	last if $opt_skip_identify;
 	if( my $id = Identify() ) {
 		$h->repository($id);
 		$PROTOCOL_VERSION = $id->version;
