@@ -19,7 +19,7 @@ sub resumptionToken { shift->headers->header('resumptionToken',@_) }
 sub item {
 	my $self = shift;
 	if( defined($self->{onRecord}) ) {
-		$self->{onRecord}->($_) for @_;
+		$self->{onRecord}->($_, $self) for @_;
 	} else {
 		push(@{$self->{item}}, @_);
 	}

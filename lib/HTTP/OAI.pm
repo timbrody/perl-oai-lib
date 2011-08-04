@@ -2,7 +2,7 @@ package HTTP::OAI;
 
 use strict;
 
-our $VERSION = '3.27';
+our $VERSION = '3.28';
 
 # perlcore
 use Carp;

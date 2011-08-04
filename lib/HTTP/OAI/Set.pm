@@ -60,7 +60,8 @@ sub end_element {
 		die ref($self)." Parse error: Empty setSpec\n" unless $hash->{Text};
 		$self->setSpec($hash->{Text});
 	} elsif( $elem eq 'setname' ) {
-		die ref($self)." Parse error: Empty setName\n" unless $hash->{Text};
+		warn ref($self)." Parse error: Empty setName\n", return
+			unless $hash->{Text};
 		$self->setName($hash->{Text});
 	} elsif( $elem eq 'setdescription' ) {
 		$self->SUPER::end_document();
