@@ -58,6 +58,7 @@ sub request
 	$parser->{request} = $request;
 	$parser->{content_length} = 0;
 	$parser->{content_buffer} = Encode::encode('UTF-8','');
+	$response->request($request);
 	$response->code(200);
 	$response->message('lwp_callback');
 	$response->headers->set_handler($response);
