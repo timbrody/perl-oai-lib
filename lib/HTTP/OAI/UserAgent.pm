@@ -69,7 +69,15 @@ HTTP::OAI::Debug::trace( $response->verb . " " . ref($parser) . "->parse_chunk()
 		$r = $self->SUPER::request($request,sub {
 			$self->lwp_callback( $parser, @_ )
 		});
-		$self->lwp_endparse( $parser ) if $r->is_success;
+		if( $r->is_success )
+		{
+			eval { $self->lwp_endparse( $parser ) };
+			if( $@ )
+			{
+				$r->headers->header( 'Client-Aborted', 'die' );
+				$r->headers->header( 'X-Died', $@ );
+			}
+		}
 	}
 	if( defined($r) && defined($r->headers->header( 'Client-Aborted' )) && $r->headers->header( 'Client-Aborted' ) eq 'die' )
 	{
