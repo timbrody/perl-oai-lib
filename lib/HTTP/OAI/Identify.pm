@@ -83,7 +83,6 @@ sub generate_body {
 sub start_element {
 	my ($self,$hash) = @_;
 	my $elem = lc($hash->{LocalName});
-	$self->SUPER::start_element($hash);
 	if( $elem eq 'description' && !$self->{"in_$elem"} ) {
 		$self->{OLDHandler} = $self->get_handler();
 		$self->set_handler(my $handler = $self->{handlers}->{$elem}->new());
@@ -91,6 +90,7 @@ sub start_element {
 		$self->{"in_$elem"} = $hash->{Depth};
 		g_start_document($handler);
 	}
+	$self->SUPER::start_element($hash);
 }
 
 sub end_element {
@@ -102,6 +102,7 @@ sub end_element {
 		$text =~ s/^\s+//;
 		$text =~ s/\s+$//;
 	}
+	$self->SUPER::end_element($hash);
 	if( defined($self->get_handler) ) {
 		if( $elem eq 'description' && $self->{"in_$elem"} == $hash->{Depth} ) {
 			$self->SUPER::end_document();
@@ -120,7 +121,6 @@ sub end_element {
 	} elsif( defined($text) && length($text) ) {
 		$self->headers->header($elem,$text);
 	}
-	$self->SUPER::end_element($hash);
 }
 
 1;

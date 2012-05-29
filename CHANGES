@@ -1,3 +1,6 @@
+3.28
+	- Fixed parsing <description> elements that contain multiple child nodes
+
 3.26
 	- Added 'delay' option to delay between requests
 	- Added --skip-identify option to oai_browser.pl
