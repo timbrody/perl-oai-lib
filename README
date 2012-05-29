@@ -54,9 +54,14 @@ Related Modules
 
 Net::OAI::Harvester by Ed Summers.
 
+Development
+-----------
+
+git clone git://github.com/timbrody/perl-oai-lib.git
+
 Author
 ------
 
-Copyright 2004 © Tim Brody
+Copyright 2012 © Tim Brody
 
 This module is released under the same terms as Perl.
