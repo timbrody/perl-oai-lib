@@ -1,60 +1,29 @@
 package HTTP::OAI::ListMetadataFormats;
 
+@ISA = qw( HTTP::OAI::PartialList );
+
 use strict;
-use warnings;
 
-use vars qw( @ISA );
-
-@ISA = qw( HTTP::OAI::Response );
-
-sub new {
-	my $class = shift;
-	my $self = $class->SUPER::new(@_);
-	$self->{'metadataFormat'} ||= [];
-	$self->{in_mdf} = 0;
-	$self->verb('ListMetadataFormats') unless $self->verb;
-
-	$self;
-}
-
-sub metadataFormat {
-	my $self = shift;
-	push(@{$self->{metadataformat}}, @_);
-	return wantarray ?
-		@{$self->{metadataformat}} :
-		$self->{metadataformat}->[0];
-}
-
-sub next { shift @{shift->{metadataformat}} }
-
-sub generate_body {
-	my ($self) = @_;
-	return unless defined(my $handler = $self->get_handler);
-
-	for( $self->metadataFormat ) {
-		$_->set_handler($handler);
-		$_->generate;
-	}
-}
+sub metadataFormat { shift->item(@_) }
 
 sub start_element {
-	my ($self,$hash) = @_;
+	my ($self,$hash,$r) = @_;
 	if( !$self->{'in_mdf'} ) {
 		if( lc($hash->{LocalName}) eq 'metadataformat' ) {
-			$self->set_handler(new HTTP::OAI::MetadataFormat());
+			$self->set_handler(my $mdf = HTTP::OAI::MetadataFormat->new);
+			$self->metadataFormat($mdf);
 			$self->{'in_mdf'} = $hash->{Depth};
 		}
 	}
-	$self->SUPER::start_element($hash);
+	$self->SUPER::start_element($hash,$r);
 }
 
 sub end_element {
-	my ($self,$hash) = @_;
-	$self->SUPER::end_element($hash);
+	my ($self,$hash,$r) = @_;
+	$self->SUPER::end_element($hash,$r);
 	if( $self->{'in_mdf'} == $hash->{Depth} ) {
 		if( lc($hash->{LocalName}) eq 'metadataformat' ) {
 HTTP::OAI::Debug::trace( "metadataFormat: " . $self->get_handler->metadataPrefix );
-			$self->metadataFormat( $self->get_handler );
 			$self->set_handler( undef );
 			$self->{'in_mdf'} = 0;
 		}

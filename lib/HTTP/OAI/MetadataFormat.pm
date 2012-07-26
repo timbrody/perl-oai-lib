@@ -1,50 +1,25 @@
 package HTTP::OAI::MetadataFormat;
 
+@ISA = qw( HTTP::OAI::MemberMixin XML::SAX::Base );
+
 use strict;
-use warnings;
 
-use HTTP::OAI::SAXHandler qw/ :SAX /;
+sub metadataPrefix { shift->_elem('metadataPrefix',@_) }
+sub schema { shift->_elem('schema',@_) }
+sub metadataNamespace { shift->_elem('metadataNamespace',@_) }
 
-use vars qw( @ISA );
-@ISA = qw( HTTP::OAI::Encapsulation );
+sub generate
+{
+	my( $self, $driver ) = @_;
 
-sub new {
-	my ($class,%args) = @_;
-
-	my $self = $class->SUPER::new(%args);
-
-	$self->metadataPrefix($args{metadataPrefix}) if $args{metadataPrefix};
-	$self->schema($args{schema}) if $args{schema};
-	$self->metadataNamespace($args{metadataNamespace}) if $args{metadataNamespace};
-
-	$self;
-}
-
-sub metadataPrefix {
-	my $self = shift;
-	return @_ ? $self->{metadataPrefix} = shift : $self->{metadataPrefix}
-}
-sub schema {
-	my $self = shift;
-	return @_ ? $self->{schema} = shift : $self->{schema} }
-sub metadataNamespace {
-	my $self = shift;
-	return @_ ? $self->{metadataNamespace} = shift : $self->{metadataNamespace}
-}
-
-sub generate {
-	my ($self) = @_;
-	return unless defined(my $handler = $self->get_handler);
-
-	g_start_element($handler,'http://www.openarchives.org/OAI/2.0/','metadataFormat',{});
-	
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','metadataPrefix',{},$self->metadataPrefix);
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','schema',{},$self->schema);
-	if( defined($self->metadataNamespace) ) {
-		g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','metadataNamespace',{},$self->metadataNamespace);
+	$driver->start_element('metadataFormat');
+	$driver->data_element('metadataPrefix',$self->metadataPrefix);
+	$driver->data_element('schema',$self->schema);
+	if( defined($self->metadataNamespace) )
+	{
+		$driver->data_element('metadataNamespace',$self->metadataNamespace);
 	}
-	
-	g_end_element($handler,'http://www.openarchives.org/OAI/2.0/','metadataFormat');
+	$driver->end_element('metadataFormat');
 }
 
 sub end_element {

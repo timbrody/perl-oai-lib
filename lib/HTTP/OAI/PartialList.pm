@@ -1,43 +1,57 @@
 package HTTP::OAI::PartialList;
 
+@ISA = qw( HTTP::OAI::Verb );
+
 use strict;
-use warnings;
 
-use vars qw( @ISA );
-@ISA = qw( HTTP::OAI::Response );
+sub resumptionToken { shift->_elem('resumptionToken',@_) }
 
-sub new {
-	my( $class, %args ) = @_;
-	my $self = $class->SUPER::new(%args);
-	$self->{onRecord} = delete $args{onRecord};
-	$self->{item} ||= [];
-	return $self;
+sub item { shift->_multi('item',@_) }
+
+sub next
+{
+	my( $self ) = @_;
+
+	return shift @{$self->{item}};
 }
 
-sub resumptionToken { shift->headers->header('resumptionToken',@_) }
+sub generate_body
+{
+	my( $self, $driver ) = @_;
 
-sub item {
-	my $self = shift;
-	if( defined($self->{onRecord}) ) {
-		$self->{onRecord}->($_, $self) for @_;
-	} else {
-		push(@{$self->{item}}, @_);
+	for($self->item)
+	{
+		$_->generate( $driver );
 	}
-	return wantarray ?
-		@{$self->{item}} :
-		$self->{item}->[0];
+	if(my $token = $self->resumptionToken)
+	{
+		$token->generate( $driver );
+	}
 }
 
-sub next {
-	my $self = shift;
-	return shift @{$self->{item}} if @{$self->{item}};
-	return undef unless $self->{'resume'} and $self->resumptionToken;
+sub start_element
+{
+	my ($self, $hash, $r) = @_;
 
-	do {
-		$self->resume(resumptionToken=>$self->resumptionToken);
-	} while( $self->{onRecord} and $self->is_success and $self->resumptionToken );
+	if( $hash->{Depth} == 3 && $hash->{LocalName} eq "resumptionToken" )
+	{
+		$self->set_handler(HTTP::OAI::ResumptionToken->new);
+	}
 
-	return $self->is_success ? $self->next : undef;
+	$self->SUPER::start_element( $hash, $r );
+}
+
+sub end_element
+{
+	my ($self, $hash, $r) = @_;
+
+	$self->SUPER::end_element( $hash, $r );
+
+	if( $hash->{Depth} == 3 && $hash->{LocalName} eq "resumptionToken" )
+	{
+		$self->resumptionToken( $self->get_handler );
+		$self->set_handler( undef );
+	}
 }
 
 1;

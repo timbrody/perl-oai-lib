@@ -26,13 +26,124 @@ sub last_request_completed { shift->_elem( "last_request_completed", @_ ) }
 
 sub redirect_ok { 1 }
 
+sub _oai {
+	my( $self, @args ) = @_;
+	my $cb = ref($args[0]) eq "CODE" ? shift @args : undef;
+	my %args = @args;
+	$cb = delete $args{onRecord} || $cb || $self->{onRecord};
+
+	my $handlers = delete $args{handlers} || {};
+
+	if( !$args{force} && (my @errors = HTTP::OAI::Repository::validate_request(%args)) ) {
+		return new HTTP::OAI::Response(
+			code=>503,
+			message=>'Invalid Request (use \'force\' to force a non-conformant request): ' . $errors[0]->toString,
+			errors=>\@errors
+		);
+	}
+
+	# Get rid of any empty arguments
+	for( keys %args ) {
+		delete $args{$_} if !defined($args{$_}) || !length($args{$_});
+	}
+
+	my $request = HTTP::Request->new( GET => $self->_buildurl(%args) );
+
+	delete $args{force};
+
+	my $response = HTTP::OAI::Response->new(
+			%args,
+			handlers => $handlers,
+			onRecord => $cb,
+		);
+	$response->request( $request );
+	my $parser = XML::LibXML->new(
+			Handler => HTTP::OAI::SAX::Trace->new(
+				Handler => HTTP::OAI::SAX::Text->new(
+					Handler => $response
+			)	)	);
+	$parser->{content_length} = 0;
+	$parser->{content_buffer} = Encode::encode('UTF-8','');
+
+HTTP::OAI::Debug::trace( $args{verb} . " " . ref($parser) . "->parse_chunk()" );
+	my $r;
+	{
+		local $SIG{__DIE__};
+		$r = $self->SUPER::request($request,sub {
+				$self->lwp_callback( $parser, @_ )
+			});
+		if( $r->is_success && !defined $r->headers->header( 'Client-Aborted' ) )
+		{
+			eval { $self->lwp_endparse( $parser ) };
+			if( $@ )
+			{
+				$r->headers->header( 'Client-Aborted', 'die' );
+				$r->headers->header( 'X-Died', $@ );
+			}
+		}
+	}
+	if( defined($r->headers->header( 'Client-Aborted' )) && $r->headers->header( 'Client-Aborted' ) eq 'die' )
+	{
+		my $err = $r->headers->header( 'X-Died' );
+		if( $err eq "done" )
+		{
+			$r->code(200);
+			$r->message("OK");
+		}
+		else
+		{
+			$r->code(500);
+			$r->message( 'An error occurred while parsing: ' . $err );
+		}
+	}
+	
+	my $cnt_len = $parser->{content_length};
+	undef $parser;
+
+	# OAI retry-after
+	if( defined($r) && $r->code == 503 && defined(my $timeout = $r->headers->header('Retry-After')) ) {
+		if( $self->{recursion}++ > 10 ) {
+			$r->code(500);
+			$r->message("Server did not give a response after 10 retries");
+			return $r;
+		}
+		if( !$timeout or $timeout =~ /\D/ or $timeout < 0 or $timeout > 86400 ) {
+			$r->code(500);
+			$r->message("Server specified an unsupported duration to wait (\"".($timeout||'null')."\"");
+			return $r;
+		}
+HTTP::OAI::Debug::trace( "Waiting $timeout seconds" );
+		sleep($timeout+10); # We wait an extra 10 secs for safety
+		return $self->_oai(@args);
+	# Got an empty response
+	} elsif( defined($r) && $r->is_success && $cnt_len == 0 ) {
+		if( $self->{recursion}++ > 10 ) {
+			$r->code(500);
+			$r->message("No content in server response");
+			return $r;
+		}
+HTTP::OAI::Debug::trace( "Retrying on empty response" );
+		sleep(5);
+		return $self->_oai(@args);
+	# An HTTP error occurred
+	} elsif( $r->is_error ) {
+		return $r;
+	# An error occurred during parsing
+	} elsif( $@ ) {
+		$r->code(my $code = $@ =~ /read timeout/ ? 504 : 600);
+		$r->message($@);
+		return $r;
+	}
+
+	# access the original response via previous
+	$response->previous($r);
+
+	return $response;
+}
+
 sub request
 {
-	my $self = shift;
-	my ($request, $arg, $size, $previous, $response) = @_;
-	if( ref($request) eq 'HASH' ) {
-		$request = HTTP::Request->new(GET => _buildurl(%$request));
-	}
+	my( $self, @args ) = @_;
 
 	my $delay = $self->delay;
 	if( defined $delay )
@@ -44,112 +155,11 @@ sub request
 		select(undef,undef,undef,$delay) if $delay > 0;
 	}
 
-	if( !defined $response )
-	{
-		$response = $self->SUPER::request(@_);
-		$self->last_request_completed( time );
-		return $response;
-	}
-
-	my $parser = XML::LibXML->new(
-		Handler => HTTP::OAI::SAXHandler->new(
-			Handler => $response->headers
-	));
-	$parser->{request} = $request;
-	$parser->{content_length} = 0;
-	$parser->{content_buffer} = Encode::encode('UTF-8','');
-	$response->request($request);
-	$response->code(200);
-	$response->message('lwp_callback');
-	$response->headers->set_handler($response);
-HTTP::OAI::Debug::trace( $response->verb . " " . ref($parser) . "->parse_chunk()" );
-	my $r;
-	{
-		local $SIG{__DIE__};
-		$r = $self->SUPER::request($request,sub {
-			$self->lwp_callback( $parser, @_ )
-		});
-		if( $r->is_success )
-		{
-			eval { $self->lwp_endparse( $parser ) };
-			if( $@ )
-			{
-				$r->headers->header( 'Client-Aborted', 'die' );
-				$r->headers->header( 'X-Died', $@ );
-			}
-		}
-	}
-	if( defined($r) && defined($r->headers->header( 'Client-Aborted' )) && $r->headers->header( 'Client-Aborted' ) eq 'die' )
-	{
-		my $err = $r->headers->header( 'X-Died' );
-		if( $err !~ /^done\n/ )
-		{
-			$r->code(500);
-			$r->message( 'An error occurred while parsing: ' . $err );
-		}
-	}
-
-	$response->headers->set_handler(undef);
-	
-	# Allow access to the original headers through 'previous'
-	$response->previous($r);
-	
-	my $cnt_len = $parser->{content_length};
-	undef $parser;
-
-	# OAI retry-after
-	if( defined($r) && $r->code == 503 && defined(my $timeout = $r->headers->header('Retry-After')) ) {
-		$self->last_request_completed( time );
-		if( $self->{recursion}++ > 10 ) {
-			$self->{recursion} = 0;
-			warn ref($self)."::request (retry-after) Given up requesting after 10 retries\n";
-			return $response->copy_from( $r );
-		}
-		if( !$timeout or $timeout =~ /\D/ or $timeout < 0 or $timeout > 86400 ) {
-			warn ref($self)." Archive specified an odd duration to wait (\"".($timeout||'null')."\")\n";
-			return $response->copy_from( $r );
-		}
-HTTP::OAI::Debug::trace( "Waiting $timeout seconds" );
-		sleep($timeout+10); # We wait an extra 10 secs for safety
-		return $self->request($request,undef,undef,undef,$response);
-	# Got an empty response
-	} elsif( defined($r) && $r->is_success && $cnt_len == 0 ) {
-		$self->last_request_completed( time );
-		if( $self->{recursion}++ > 10 ) {
-			$self->{recursion} = 0;
-			warn ref($self)."::request (empty response) Given up requesting after 10 retries\n";
-			return $response->copy_from( $r );
-		}
-HTTP::OAI::Debug::trace( "Retrying on empty response" );
-		sleep(5);
-		return $self->request($request,undef,undef,undef,$response);
-	# An HTTP error occurred
-	} elsif( $r->is_error ) {
-		$response->copy_from( $r );
-		$response->errors(HTTP::OAI::Error->new(
-			code=>$r->code,
-			message=>$r->message,
-		));
-	# An error occurred during parsing
-	} elsif( $@ ) {
-		$response->code(my $code = $@ =~ /read timeout/ ? 504 : 600);
-		$response->message($@);
-		$response->errors(HTTP::OAI::Error->new(
-			code=>$code,
-			message=>$@,
-		));
-	}
-
-	# Reset the recursion timer
-	$self->{recursion} = 0;
-	
-	# Copy original $request => OAI $response to allow easy
-	# access to the requested URL
-	$response->request($request);
+	my $r = $self->SUPER::request( @args );
 
 	$self->last_request_completed( time );
 
-	$response;
+	return $r;
 }
 
 sub lwp_badchar
@@ -226,23 +236,22 @@ sub _ccchars {
 }
 
 sub _buildurl {
-	my %attr = @_;
-	Carp::confess "_buildurl requires baseURL" unless $attr{'baseURL'};
-	Carp::confess "_buildurl requires verb" unless $attr{'verb'};
-	my $uri = new URI(delete($attr{'baseURL'}));
-	if( defined($attr{resumptionToken}) && !$attr{force} ) {
-		$uri->query_form(verb=>$attr{'verb'},resumptionToken=>$attr{'resumptionToken'});
-	} else {
-		delete $attr{force};
-		# http://www.cshc.ubc.ca/oai/ breaks if verb isn't first, doh
-		$uri->query_form(verb=>delete($attr{'verb'}),%attr);
-	}
-	return $uri->as_string;
-}
+	my( $self, %args ) = @_;
 
-sub url {
-	my $self = shift;
-	return _buildurl(@_);
+	Carp::confess "Requires verb parameter" unless $args{'verb'};
+
+	my $uri = URI->new( $self->baseURL );
+	return $uri->as_string if $uri->scheme eq "file";
+
+	if( defined($args{resumptionToken}) && !$args{force} ) {
+		$uri->query_form(verb=>$args{'verb'},resumptionToken=>$args{'resumptionToken'});
+	} else {
+		delete $args{force};
+		# http://www.cshc.ubc.ca/oai/ breaks if verb isn't first, doh
+		$uri->query_form(verb=>delete($args{'verb'}),%args);
+	}
+
+	return $uri->as_string;
 }
 
 sub decompress {
@@ -317,10 +326,6 @@ OAI-PMH related options:
 	resumptionToken => $token
 	metadataPrefix => $mdp
 	set => $set
-
-=item $str = $ua->url(baseURL=>$baseref, verb=>$verb, ...)
-
-Takes the same arguments as request, but returns the URL that would be requested.
 
 =item $time_d = $ua->delay( $time_d )
 

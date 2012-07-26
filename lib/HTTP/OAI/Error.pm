@@ -1,20 +1,10 @@
 package HTTP::OAI::Error;
 
+@ISA = qw( HTTP::OAI::SAX::Base HTTP::OAI::MemberMixin Exporter );
+
 use strict;
-use warnings;
 
-use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAG);
-
-use vars qw(
-	$PARSER
-);
-
-$PARSER = 600;
-
-use Exporter;
-use HTTP::OAI::SAXHandler qw( :SAX );
-
-@ISA = qw(HTTP::OAI::Encapsulation Exporter);
+use vars qw(@EXPORT @EXPORT_OK %EXPORT_TAG);
 
 @EXPORT = qw();
 @EXPORT_OK = qw(%OAI_ERRORS);
@@ -32,43 +22,39 @@ my %OAI_ERRORS = (
 	noSetHierarchy => 'The repository does not support sets.'
 );
 
-sub new {
-	my ($class,%args) = @_;
-	my $self = $class->SUPER::new(%args);
+sub new
+{
+	my( $class, %self ) = @_;
 
-	$self->code($args{code});
-	$self->message($args{message});
+	$self{message} ||= $OAI_ERRORS{$self{code}} if $self{code};
 
-	$self;
+	return $class->SUPER::new(%self);
 }
 
 sub code { shift->_elem('code',@_) }
 sub message { shift->_elem('message',@_) }
 
-sub toString {
-	my $self = shift;
-	return $self->code . " (\"" . ($self->message || 'No further information available') . "\")";
+sub generate
+{
+	my( $self, $driver ) = @_;
+
+	$driver->data_element( 'error', ($self->message || $OAI_ERRORS{$self->code} || ''),
+			code => $self->code,
+		);
 }
 
-sub generate {
-	my ($self) = @_;
-	return unless defined(my $handler = $self->get_handler);
-	Carp::croak ref($self)."::generate Error code undefined" unless defined($self->code);
+sub start_element
+{
+	my( $self, $hash ) = @_;
 
-	g_data_element($handler,
-		'http://www.openarchives.org/OAI/2.0/',
-		'error',
-		{
-			'{}code'=>{
-				'LocalName' => 'code',
-				'Prefix' => '',
-				'Value' => $self->code,
-				'Name' => 'code',
-				'NamespaceURI' => '',
-			},
-		},
-		($self->message || $OAI_ERRORS{$self->code} || '')
-	);
+	$self->code( $hash->{Attributes}->{'{}code'}->{Value} );
+}
+
+sub characters
+{
+	my( $self, $hash ) = @_;
+
+	$self->message( $hash->{Data} );
 }
 
 1;

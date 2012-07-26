@@ -1,82 +1,73 @@
 package HTTP::OAI::Record;
 
+@ISA = qw( HTTP::OAI::MemberMixin HTTP::OAI::SAX::Base );
+
 use strict;
-use warnings;
-
-use vars qw(@ISA);
-
-use HTTP::OAI::SAXHandler qw/ :SAX /;
-
-@ISA = qw(HTTP::OAI::Encapsulation);
 
 sub new {
 	my ($class,%args) = @_;
-	my $self = $class->SUPER::new(%args);
 
-	$self->{handlers} = $args{handlers};
+	$args{header} ||= HTTP::OAI::Header->new(%args);
 
-	$self->header($args{header}) unless defined($self->header);
-	$self->metadata($args{metadata}) unless defined($self->metadata);
-	$self->{about} = $args{about} || [] unless defined($self->{about});
-
-	$self->{in_record} = 0;
-
-	$self->header(new HTTP::OAI::Header(%args)) unless defined $self->header;
-
-	$self;
+	return $class->SUPER::new(%args);
 }
 
 sub header { shift->_elem('header',@_) }
 sub metadata { shift->_elem('metadata',@_) }
-sub about {
-	my $self = shift;
-	push @{$self->{about}}, @_ if @_;
-	return @{$self->{about}};
-}
+sub about { shift->_multi('about',@_) }
 
 sub identifier { shift->header->identifier(@_) }
 sub datestamp { shift->header->datestamp(@_) }
 sub status { shift->header->status(@_) }
 sub is_deleted { shift->header->is_deleted(@_) }
 
-sub generate {
-	my ($self) = @_;
-	return unless defined(my $handler = $self->get_handler);
+sub generate
+{
+	my( $self, $driver ) = @_;
 
-	g_start_element($handler,'http://www.openarchives.org/OAI/2.0/','record',{});
-	$self->header->set_handler($handler);
-	$self->header->generate;
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','metadata',{},$self->metadata) if defined($self->metadata);
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','about',{},$_) for $self->about;
-	g_end_element($handler,'http://www.openarchives.org/OAI/2.0/','record');
+	$driver->start_element('record');
+	$self->header->generate( $driver );
+	$self->metadata->generate( $driver ) if defined $self->metadata;
+	$self->about->generate( $driver ) for $self->about;
+	$driver->end_element('record');
 }
 
 sub start_element {
-	my ($self,$hash) = @_;
-	return $self->SUPER::start_element( $hash ) if $self->{in_record};
-	my $elem = lc($hash->{LocalName});
-	if( $elem eq 'record' && $self->version eq '1.1' ) {
-		$self->status($hash->{Attributes}->{'{}status'}->{Value});
+	my ($self,$hash, $r) = @_;
+
+	if( !$self->{in_record} )
+	{
+		my $elem = lc($hash->{LocalName});
+		if( $elem eq 'record' && $hash->{Attributes}->{'{}status'}->{Value} )
+		{
+			$self->status($hash->{Attributes}->{'{}status'}->{Value});
+		}
+		elsif( $elem eq "header" )
+		{
+			$self->set_handler(my $handler = HTTP::OAI::Header->new);
+			$self->header( $handler );
+			$self->{in_record} = $hash->{Depth};
+		}
+		elsif( $elem =~ /^metadata|about$/ )
+		{
+			my $class = $r->handlers->{$elem} || "HTTP::OAI::Metadata";
+			$self->set_handler(my $handler = $class->new);
+			$self->$elem($handler);
+			$self->{in_record} = $hash->{Depth};
+		}
 	}
-	elsif( $elem =~ /^header|metadata|about$/ ) {
-		my $handler = $self->{handlers}->{$elem}->new()
-			or die "Error getting handler for <$elem> (failed to create new $self->{handlers}->{$elem})";
-		$self->set_handler($handler);
-		$self->{in_record} = $hash->{Depth};
-		g_start_document( $handler );
-		$self->SUPER::start_element( $hash );
-	}
+
+	$self->SUPER::start_element($hash, $r);
 }
 
 sub end_element {
-	my ($self,$hash) = @_;
-	$self->SUPER::end_element($hash);
-	if( $self->{in_record} == $hash->{Depth} ) {
-		$self->SUPER::end_document();
+	my ($self,$hash, $r) = @_;
 
-		my $elem = lc ($hash->{LocalName});
-		$self->$elem ($self->get_handler);
-		$self->set_handler ( undef );
+	$self->SUPER::end_element($hash, $r);
+
+	if( $self->{in_record} == $hash->{Depth} )
+	{
+		$self->set_handler( undef );
 		$self->{in_record} = 0;
 	}
 }

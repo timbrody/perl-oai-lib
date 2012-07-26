@@ -1,113 +1,47 @@
 package HTTP::OAI::Metadata::OAI_DC;
 
-use XML::LibXML;
-use HTTP::OAI::Metadata;
-@ISA = qw(HTTP::OAI::Metadata);
+@ISA = qw( HTTP::OAI::MemberMixin HTTP::OAI::SAX::Base );
 
 use strict;
 
 our $OAI_DC_SCHEMA = 'http://www.openarchives.org/OAI/2.0/oai_dc/';
 our $DC_SCHEMA = 'http://purl.org/dc/elements/1.1/';
 our @DC_TERMS = qw( contributor coverage creator date description format identifier language publisher relation rights source subject title type );
+our %VALID_TERM = map { $_ => 1 } @DC_TERMS;
 
-sub new {
-	my( $class, %self ) = @_;
+sub metadata { shift->dom(@_) }
 
-	my $self = $class->SUPER::new( %self );
+sub dc { shift->_elem('dc',@_) }
 
-	if( exists $self{dc} && ref($self{dc}) eq 'HASH' )
-	{
-		my ($dom,$dc) =_oai_dc_dom();
-		foreach my $term (@DC_TERMS)
-		{
-			foreach my $value (@{$self{dc}->{$term}||[]})
-			{
-				$dc->appendChild($dom->createElementNS($DC_SCHEMA, $term))->appendText( $value );
-			}
-		}
-		$self->dom($dom);
-	}
-
-	$self;
-}
-
-sub dc
+sub generate
 {
-	my( $self ) = @_;
+	my( $self, $driver ) = @_;
 
-	my $dom = $self->dom;
-	my $metadata = $dom->documentElement;
-
-	return $self->{dc} if defined $self->{dc};
-
-	my %dc = map { $_ => [] } @DC_TERMS;
-
-	$self->_dc( $metadata, \%dc );
-
-	return \%dc;
-}
-
-sub _dc
-{
-	my( $self, $node, $dc ) = @_;
-
-	my $ns = $node->getNamespaceURI;
-	$ns =~ s/\/?$/\//;
-
-	if( $ns eq $DC_SCHEMA )
-	{
-		push @{$dc->{lc($node->localName)}}, $node->textContent;
-	}
-	elsif( $node->hasChildNodes )
-	{
-		for($node->childNodes)
-		{
-			next if $_->nodeType != XML_ELEMENT_NODE;
-			$self->_dc( $_, $dc );
-		}
-	}
-}
-
-sub _oai_dc_dom {
-	my $dom = XML::LibXML->createDocument();
-	$dom->setDocumentElement(my $dc = $dom->createElement('oai_dc:dc'));
-	$dc->setAttribute('xmlns:oai_dc','http://www.openarchives.org/OAI/2.0/oai_dc/');
-	$dc->setAttribute('xmlns:dc','http://purl.org/dc/elements/1.1/');
-	$dc->setAttribute('xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance');
-	$dc->setAttribute('xsi:schemaLocation','http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd');
-	return ($dom,$dc);
-}
-
-sub metadata { 
-	my( $self, $md ) = @_;
-
-	return $self->dom if @_ == 1;
-
-	delete $self->{dc};
-	$self->dom( $md );
-
-	return if !defined $md;
-
-	my $dc = $self->dc;
-
-	my ($dom,$metadata) = _oai_dc_dom();
-
+	$driver->start_element( 'metadata' );
+	$driver->start_element( 'oai_dc:dc',
+		'xmlns:oai_dc' => 'http://www.openarchives.org/OAI/2.0/oai_dc/',
+		'xmlns:dc' => 'http://purl.org/dc/elements/1.1/',
+		'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+		'xsi:schemaLocation' => 'http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
+	);
 	foreach my $term (@DC_TERMS)
 	{
-		foreach my $value (@{$dc->{$term}})
+		foreach my $value (@{$self->{dc}{$term} || []})
 		{
-			$metadata->appendChild( $dom->createElementNS( $DC_SCHEMA, $term ) )->appendText( $value );
+			$driver->data_element( "dc:$term", $value );
 		}
 	}
-
-	$self->dom($dom)
+	$driver->end_element( 'oai_dc:dc' );
+	$driver->end_element( 'metadata' );
 }
 
-sub toString {
+sub _toString {
 	my $self = shift;
 	my $str = "Open Archives Initiative Dublin Core (".ref($self).")\n";
-	foreach my $term ( @DC_TERMS ) {
-		for(@{$self->{dc}->{$term}}) {
+	foreach my $term ( @DC_TERMS )
+	{
+		for(@{$self->{dc}->{$term}})
+		{
 			$str .= sprintf("%s:\t%s\n", $term, $_||'');
 		}
 	}
@@ -117,16 +51,10 @@ sub toString {
 sub end_element {
 	my ($self,$hash) = @_;
 	my $elem = lc($hash->{LocalName});
-	if( exists($self->{dc}->{$elem}) ) {
+	if( $VALID_TERM{$elem} )
+	{
 		push @{$self->{dc}->{$elem}}, $hash->{Text};
 	}
-	$self->SUPER::end_element($hash);
-}
-
-sub end_document {
-	my $self = shift;
-	$self->SUPER::end_document();
-	$self->metadata($self->dom);
 }
 
 1;

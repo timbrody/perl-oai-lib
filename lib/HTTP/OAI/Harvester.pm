@@ -1,11 +1,8 @@
 package HTTP::OAI::Harvester;
 
+use base HTTP::OAI::UserAgent;
+
 use strict;
-use warnings;
-
-use vars qw( @ISA );
-
-@ISA = qw( HTTP::OAI::UserAgent );
 
 sub new {
 	my ($class,%args) = @_;
@@ -13,9 +10,10 @@ sub new {
 	delete @ARGS{qw(baseURL resume repository handlers onRecord)};
 	my $self = $class->SUPER::new(%ARGS);
 
+	$self->{doc} = XML::LibXML::Document->new( '1.0', 'UTF-8' );
+
 	$self->{'resume'} = exists($args{resume}) ? $args{resume} : 1;
-	$self->{'handlers'} = $args{'handlers'};
-	$self->{'onRecord'} = $args{'onRecord'};
+
 	$self->agent('OAI-PERL/'.$HTTP::OAI::VERSION);
 
 	# Record the base URL this harvester instance is associated with
@@ -23,38 +21,15 @@ sub new {
 		$args{repository} ||
 		HTTP::OAI::Identify->new(baseURL=>$args{baseURL});
 	Carp::croak "Requires repository or baseURL" unless $self->repository and $self->repository->baseURL;
+
 	# Canonicalise
 	$self->baseURL($self->baseURL);
 
 	return $self;
 }
 
-sub resume {
-	my $self = shift;
-	return @_ ? $self->{resume} = shift : $self->{resume};
-}
-
-sub repository {
-	my $self = shift;
-	return $self->{repository} unless @_;
-	my $id = shift;
-	# Don't clobber a good existing base URL with a bad one
-	if( $self->{repository} && $self->{repository}->baseURL ) {
-		if( !$id->baseURL ) {
-			Carp::carp "Attempt to set a non-existant baseURL";
-			$id->baseURL($self->baseURL);
-		} else {
-			my $uri = URI->new($id->baseURL);
-			if( $uri && $uri->scheme ) {
-				$id->baseURL($uri->canonical);
-			} else {
-				Carp::carp "Ignoring attempt to use an invalid base URL: " . $id->baseURL;
-				$id->baseURL($self->baseURL);
-			}
-		}
-	}
-	return $self->{repository} = $id;
-}
+sub resume { shift->_elem('resume',@_) }
+sub repository { shift->_elem('repository',@_) }
 
 sub baseURL {
 	my $self = shift;
@@ -62,162 +37,50 @@ sub baseURL {
 		$self->repository->baseURL(URI->new(shift)->canonical) :
 		$self->repository->baseURL();
 }
+sub version { shift->repository->protocolVersion(@_); }
 
-sub version { shift->repository->version(@_); }
+sub ListIdentifiers { shift->_list( @_, verb => "ListIdentifiers" ); }
+sub ListRecords { shift->_list( @_, verb => "ListRecords" ); }
+sub ListSets { shift->_list( @_, verb => "ListSets" ); }
+sub _list
+{
+	my $self = shift;
+
+	local $self->{recursion};
+	my $r = $self->_oai( @_ );
+
+	# resume the partial list?
+	# note: noRecordsMatch is a "success" but won't have a resumptionToken
+	while($self->resume && $r->is_success && !$r->error && defined(my $token = $r->resumptionToken))
+	{
+		local $self->{recursion};
+		$r = $self->_oai(
+			$r->{onRecord},
+			handlers => $r->handlers,
+			verb => $r->verb,
+			resumptionToken => $token->resumptionToken,
+		);
+	}
+
+	$self->version( $r->version ) if $r->is_success;
+
+	return $r;
+}
 
 # build the methods for each OAI verb
-foreach my $verb (qw( GetRecord Identify ListIdentifiers ListMetadataFormats ListRecords ListSets ))
+foreach my $verb (qw( GetRecord Identify ListMetadataFormats ))
 {
 	no strict "refs";
-	*$verb = sub { shift->_oai( verb => $verb, @_ )};
-}
+	*$verb = sub {
+		my $self = shift;
+		local $self->{recursion};
 
-sub _oai {
-	my( $self, %args ) = @_;
+		my $r = $self->_oai( @_, verb => $verb );
 
-	my $verb = $args{verb} or Carp::croak "Requires verb argument";
+		$self->version( $r->version ) if $r->is_success;
 
-	my $handlers = delete($args{handlers}) || $self->{'handlers'};
-	my $onRecord = delete($args{onRecord}) || $self->{'onRecord'};
-
-	if( !$args{force} &&
-		defined($self->repository->version) &&
-		'2.0' eq $self->repository->version &&
-		(my @errors = HTTP::OAI::Repository::validate_request(%args)) ) {
-		return new HTTP::OAI::Response(
-			code=>503,
-			message=>'Invalid Request (use \'force\' to force a non-conformant request): ' . $errors[0]->toString,
-			errors=>\@errors
-		);
-	}
-
-	delete $args{force};
-	# Get rid of any empty arguments
-	for( keys %args ) {
-		delete $args{$_} if !defined($args{$_}) || !length($args{$_});
-	}
-
-	# Check for a static repository (sets _static)
-	if( !$self->{_interogated} ) {
-		$self->interogate();
-		$self->{_interogated} = 1;
-	}
-	
-	if( 'ListIdentifiers' eq $verb &&
-		defined($self->repository->version) && 
-		'1.1' eq $self->repository->version ) {
-		delete $args{metadataPrefix};
-	}
-
-	my $r = "HTTP::OAI::$verb"->new(
-		harvestAgent => $self,
-		resume => $self->resume,
-		handlers => $handlers,
-		onRecord => $onRecord,
-	);
-	$r->headers->{_args} = \%args;
-
-	# Parse all the records if _static set
-	if( defined($self->{_static}) && !defined($self->{_records}) ) {
-		my $lmdf = HTTP::OAI::ListMetadataFormats->new(
-			handlers => $handlers,
-		);
-		$lmdf->headers->{_args} = {
-			%args,
-			verb=>'ListMetadataFormats',
-		};
-		# Find the metadata formats
-		$lmdf = $lmdf->parse_string($self->{_static});
-		return $lmdf unless $lmdf->is_success;
-		@{$self->{_formats}} = $lmdf->metadataFormat;
-		# Extract all records
-		$self->{_records} = {};
-		for($lmdf->metadataFormat) {
-			my $lr = HTTP::OAI::ListRecords->new(
-				handlers => $handlers,
-			);
-			$lr->headers->{_args} = {
-				%args,
-				verb=>'ListRecords',
-				metadataPrefix=>$_->metadataPrefix,
-			};
-			$lr->parse_string($self->{_static});
-			return $lr if !$lr->is_success;
-			@{$self->{_records}->{$_->metadataPrefix}} = $lr->record;
-		}
-		undef($self->{_static});
-	}
-	
-	# Make the remote request and return the result
-	if( !defined($self->{_records}) ) {
-		$r = $self->request({baseURL=>$self->baseURL,%args},undef,undef,undef,$r);
-		# Lets call next() for the user if she's using the callback interface
-		if( $onRecord and $r->is_success and $r->isa("HTTP::OAI::PartialList") ) {
-			$r->next;
-		}
 		return $r;
-	# Parse our memory copy of the static repository
-	} else {
-		$r->code(200);
-		# Format doesn't exist
-		if( $verb =~ /^GetRecord|ListIdentifiers|ListRecords$/ &&
-			!exists($self->{_records}->{$args{metadataPrefix}}) ) {
-			$r->code(600);
-			$r->errors(HTTP::OAI::Error->new(
-				code=>'cannotDisseminateFormat',
-			));
-		# GetRecord
-		} elsif( $verb eq 'GetRecord' ) {
-			for(@{$self->{_records}->{$args{metadataPrefix}}}) {
-				if( $_->identifier eq $args{identifier} ) {
-					$r->record($_);
-					return $r;
-				}
-			}
-			$r->code(600);
-			$r->errors(HTTP::OAI::Error->new(
-				code=>'idDoesNotExist'
-			));
-		# Identify
-		} elsif( $verb eq 'Identify' ) {
-			$r = $self->repository();
-		# ListIdentifiers
-		} elsif( $verb eq 'ListIdentifiers' ) {
-			$r->identifier(map { $_->header } @{$self->{_records}->{$args{metadataPrefix}}})
-		# ListMetadataFormats
-		} elsif( $verb eq 'ListMetadataFormats' ) {
-			$r->metadataFormat(@{$self->{_formats}});
-		# ListRecords
-		} elsif( $verb eq 'ListRecords' ) {
-			$r->record(@{$self->{_records}->{$args{metadataPrefix}}});
-		# ListSets
-		} elsif( $verb eq 'ListSets' ) {
-			$r->errors(HTTP::OAI::Error->new(
-				code=>'noSetHierarchy',
-				message=>'Static Repositories do not support sets',
-			));
-		}
-		return $r;
-	}
-}
-
-sub interogate {
-	my $self = shift;
-	Carp::croak "Requires baseURL" unless $self->baseURL;
-	
-HTTP::OAI::Debug::trace($self->baseURL);
-	my $r = $self->request(HTTP::Request->new(GET => $self->baseURL));
-	return unless length($r->content);
-	my $id = HTTP::OAI::Identify->new(
-		handlers=>$self->{handlers},
-	);
-	$id->headers->{_args} = {verb=>'Identify'};
-	$id->parse_string($r->content);
-	if( $id->is_success && $id->version eq '2.0s' ) {
-		$self->{_static} = $r->content;
-		$self->repository($id);
-	}
-HTTP::OAI::Debug::trace("version = ".$id->version) if $id->is_success;
+	};
 }
 
 1;

@@ -53,7 +53,7 @@ BEGIN {
 	unshift @INC, ".";
 }
 
-use vars qw($VERSION $PROTOCOL_VERSION $h);
+use vars qw($VERSION $h);
 
 use lib "../lib";
 use lib "lib";
@@ -117,7 +117,7 @@ if( $opt_tracesax )
 print <<EOF;
 Welcome to the Open Archives Browser $VERSION
 
-Copyright 2005-2006 Tim Brody <tdb01r\@ecs.soton.ac.uk>
+Copyright 2005-2012 Tim Brody <tdb01r\@ecs.soton.ac.uk>
 
 Use CTRL+C to quit at any time
 
@@ -137,13 +137,9 @@ while(1) {
 	$h = new HTTP::OAI::Harvester(baseURL=>$burl);
 	last if $opt_skip_identify;
 	if( my $id = Identify() ) {
-		$h->repository($id);
-		$PROTOCOL_VERSION = $id->version;
 		last;
 	}
 }
-
-my $archive = $h->repository;
 
 &mainloop();
 
@@ -202,7 +198,7 @@ sub GetRecord {
 			print "setSpec => ", $_, "\n";
 		}
 		print "\nHeader:\n",
-			$rec->header->dom->toString;
+			$rec->header->toString;
 		print "\nMetadata:\n",
 			$rec->metadata->toString if defined($rec->metadata);
 		print "\nAbout data:\n",
@@ -225,7 +221,7 @@ sub Identify {
 		"repositoryName => ", $r->repositoryName, "\n";
 
 	foreach my $dom (grep { defined } map { $_->dom } $r->description) {
-		foreach my $md ($dom->getElementsByTagNameNS('http://www.openarchives.org/OAI/2.0/oai-identifier','oai-identifier')) {
+		foreach my $md ($dom->firstChild) {
 			foreach my $elem ($md->getElementsByTagNameNS('http://www.openarchives.org/OAI/2.0/oai-identifier','sampleIdentifier')) {
 				$DEFAULTID = $elem->getFirstChild->toString;
 				print "sampleIdentifier => ", $DEFAULTID, "\n";

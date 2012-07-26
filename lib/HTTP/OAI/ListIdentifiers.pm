@@ -1,71 +1,40 @@
 package HTTP::OAI::ListIdentifiers;
 
-use strict;
-use warnings;
-
-use vars qw( @ISA );
 @ISA = qw( HTTP::OAI::PartialList );
 
-sub new {
-	my $class = shift;
-	my %args = @_;
-	
-	my $self = $class->SUPER::new(@_);
-
-	$self->{in_record} = 0;
-
-	$self;
-}
+use strict;
 
 sub identifier { shift->item(@_) }
 
-sub generate_body {
-	my ($self) = @_;
-	return unless defined(my $handler = $self->get_handler);
+sub start_element
+{
+	my ($self,$hash, $r) = @_;
 
-	for($self->identifier) {
-		$_->set_handler($handler);
-		$_->generate;
+	if( $hash->{Depth} == 3 && $hash->{LocalName} eq "header" )
+	{
+		$self->set_handler(HTTP::OAI::Header->new);
 	}
-	if( defined($self->resumptionToken) ) {
-		$self->resumptionToken->set_handler($handler);
-		$self->resumptionToken->generate;
-	}
-}
 
-sub start_element {
-	my ($self,$hash) = @_;
-	my $elem = lc($hash->{LocalName});
-	if( $elem eq 'header' ) {
-		$self->set_handler(new HTTP::OAI::Header(
-			version=>$self->version
-		));
-	} elsif( $elem eq 'resumptiontoken' ) {
-		$self->set_handler(new HTTP::OAI::ResumptionToken(
-			version=>$self->version
-		));
-	}
-	$self->SUPER::start_element($hash);
+	$self->SUPER::start_element($hash, $r);
 }
 
 sub end_element {
-	my ($self,$hash) = @_;
-	my $elem = lc($hash->{LocalName});
+	my ($self,$hash, $r) = @_;
+
 	$self->SUPER::end_element($hash);
-	if( $elem eq 'header' ) {
-		$self->identifier( $self->get_handler );
-		$self->set_handler( undef );
-	} elsif( $elem eq 'resumptiontoken' ) {
-		$self->resumptionToken( $self->get_handler );
-		$self->set_handler( undef );
-	}
+
 	# OAI 1.x
-	if( $self->version eq '1.1' && $elem eq 'identifier' ) {
-		$self->identifier(new HTTP::OAI::Header(
-			version=>$self->version,
+	if( $hash->{Depth} == 3 && $hash->{LocalName} eq "identifier" )
+	{
+		$r->callback(HTTP::OAI::Header->new(
 			identifier=>$hash->{Text},
 			datestamp=>'0000-00-00',
 		));
+	}
+	elsif( $hash->{Depth} == 3 && $hash->{LocalName} eq "header" )
+	{
+		$r->callback( $self->get_handler, $self );
+		$self->set_handler( undef );
 	}
 }
 

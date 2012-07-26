@@ -1,7 +1,59 @@
 package HTTP::OAI::Metadata;
 
-use vars qw(@ISA);
-@ISA = qw(HTTP::OAI::Encapsulation::DOM);
+@ISA = qw( HTTP::OAI::MemberMixin HTTP::OAI::SAX::Base );
+
+use strict;
+
+sub new
+{
+	my( $class, %self ) = @_;
+
+	$self{doc} = XML::LibXML::Document->new( '1.0', 'UTF-8' );
+	$self{dom} = $self{current} = $self{doc}->createDocumentFragment;
+
+	return bless \%self, $class;
+}
+
+sub metadata { shift->dom( @_ ) }
+sub dom { shift->_elem( "dom", @_ ) }
+
+sub generate
+{
+	my( $self, $driver ) = @_;
+
+	$driver->generate( $self->dom );
+}
+
+sub start_element
+{
+	my( $self, $hash ) = @_;
+
+	my $node = $self->{doc}->createElementNS(
+		$hash->{NamespaceURI},
+		$hash->{Name},
+	);
+	foreach my $attr (values %{$hash->{Attributes}})
+	{
+		Carp::confess "Can't setAttribute without attribute name" if !defined $attr->{Name};
+		$node->setAttribute( $attr->{Name}, $attr->{Value} );
+	}
+
+	$self->{current} = $self->{current}->appendChild( $node );
+}
+
+sub end_element
+{
+	my( $self, $hash ) = @_;
+
+	$self->{current} = $self->{current}->parentNode;
+}
+
+sub characters
+{
+	my( $self, $hash ) = @_;
+
+	$self->{current}->appendText( $hash->{Data} );
+}
 
 1;
 

@@ -2,7 +2,9 @@ package HTTP::OAI;
 
 use strict;
 
-our $VERSION = '3.28';
+our $VERSION = '4.00';
+
+use constant OAI_NS => 'http://www.openarchives.org/OAI/2.0/';
 
 # perlcore
 use Carp;
@@ -13,6 +15,8 @@ use URI;
 use HTTP::Headers;
 use HTTP::Request;
 use HTTP::Response;
+require LWP::UserAgent;
+require LWP::MemberMixin;
 
 # xml related stuff
 use XML::SAX;
@@ -22,11 +26,23 @@ use XML::LibXML::SAX;
 use XML::LibXML::SAX::Parser;
 use XML::LibXML::SAX::Builder;
 
+use HTTP::OAI::SAX::Driver;
+use HTTP::OAI::SAX::Text;
+
 # debug
 use HTTP::OAI::Debug;
+use HTTP::OAI::SAX::Trace;
+
+# generic superclasses
+use HTTP::OAI::SAX::Base;
+use HTTP::OAI::MemberMixin;
+use HTTP::OAI::Verb;
+use HTTP::OAI::PartialList;
+
+# utility classes
+use HTTP::OAI::Response;
 
 # oai data objects
-use HTTP::OAI::Encapsulation; # Basic XML handling stuff
 use HTTP::OAI::Metadata; # Super class of all data objects
 use HTTP::OAI::Error;
 use HTTP::OAI::Header;
@@ -34,13 +50,6 @@ use HTTP::OAI::MetadataFormat;
 use HTTP::OAI::Record;
 use HTTP::OAI::ResumptionToken;
 use HTTP::OAI::Set;
-
-# parses OAI headers and other utility bits
-use HTTP::OAI::Headers;
-
-# generic superclasses
-use HTTP::OAI::Response;
-use HTTP::OAI::PartialList;
 
 # oai verbs
 use HTTP::OAI::GetRecord;
@@ -65,6 +74,23 @@ if( $ENV{HTTP_OAI_SAX_TRACE} )
 {
 	HTTP::OAI::Debug::level( '+sax' );
 }
+
+our %VERSIONS = (
+	'http://www.openarchives.org/oai/1.0/oai_getrecord' => '1.0',
+	'http://www.openarchives.org/oai/1.0/oai_identify' => '1.0',
+	'http://www.openarchives.org/oai/1.0/oai_listidentifiers' => '1.0',
+	'http://www.openarchives.org/oai/1.0/oai_listmetadataformats' => '1.0',
+	'http://www.openarchives.org/oai/1.0/oai_listrecords' => '1.0',
+	'http://www.openarchives.org/oai/1.0/oai_listsets' => '1.0',
+	'http://www.openarchives.org/oai/1.1/oai_getrecord' => '1.1',
+	'http://www.openarchives.org/oai/1.1/oai_identify' => '1.1',
+	'http://www.openarchives.org/oai/1.1/oai_listidentifiers' => '1.1',
+	'http://www.openarchives.org/oai/1.1/oai_listmetadataformats' => '1.1',
+	'http://www.openarchives.org/oai/1.1/oai_listrecords' => '1.1',
+	'http://www.openarchives.org/oai/1.1/oai_listsets' => '1.1',
+	'http://www.openarchives.org/oai/2.0/' => '2.0',
+	'http://www.openarchives.org/oai/2.0/static-repository' => '2.0s',
+);
 
 1;
 

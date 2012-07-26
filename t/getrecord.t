@@ -42,6 +42,7 @@ my @sets = $rec->header->setSpec;
 ok($sets[0] eq 'a:a', 'header/setSpec');
 
 my $str = <<EOF;
+<metadata>
 <oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
 <dc:title>Symplectic Computation of Lyapunov Exponents</dc:title>
 <dc:creator>Habib, Salman</dc:creator>
@@ -53,14 +54,13 @@ my $str = <<EOF;
 <dc:type>text</dc:type>
 <dc:identifier>http://arXiv.org/abs/acc-phys/9411001</dc:identifier>
 </oai_dc:dc>
+</metadata>
 EOF
 $rec->metadata(new HTTP::OAI::Metadata());
-my $parser = XML::LibXML::SAX::Parser->new(Handler=>$rec->metadata);
-$parser->parse_string($str);
+$rec->metadata->parse_string($str);
 
 $r->record($rec);
 
-#warn $r->toDOM->toString;
 {
 # hopefully if we can re-parse our own output we're ok, because we can't
 # compare against the ever changing XML output

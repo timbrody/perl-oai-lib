@@ -1,74 +1,22 @@
 package HTTP::OAI::GetRecord;
 
+require HTTP::OAI::ListRecords;
+@ISA = qw( HTTP::OAI::ListRecords );
+
 use strict;
-use warnings;
 
-use HTTP::OAI::SAXHandler qw/ :SAX /;
-
-use vars qw(@ISA);
-
-@ISA = qw( HTTP::OAI::Response );
-
-sub new {
-	my ($class,%args) = @_;
-
-	$args{handlers} ||= {};
-	$args{handlers}->{header} ||= "HTTP::OAI::Header";
-	$args{handlers}->{metadata} ||= "HTTP::OAI::Metadata";
-	$args{handlers}->{about} ||= "HTTP::OAI::Metadata";
-
-	my $self = $class->SUPER::new(%args);
-
-	$self->verb('GetRecord') unless $self->verb;
-	
-	$self->{record} ||= [];
-	$self->record($args{record}) if defined($args{record});
-
-	return $self;
-}
-
-sub record {
+sub record
+{
 	my $self = shift;
-	$self->{record} = [shift] if @_;
-	return wantarray ?
-		@{$self->{record}} :
-		$self->{record}->[0];
+	$self->{item} = [@_] if @_;
+	return $self->{item}->[0];
 }
-sub next { shift @{shift->{record}} }
 
 sub generate_body {
-	my ($self) = @_;
+	my ($self, $driver) = @_;
 
 	for( $self->record ) {
-		$_->set_handler($self->get_handler);
-		$_->generate;
-	}
-}
-
-sub start_element {
-	my ($self,$hash) = @_;
-	my $elem = $hash->{LocalName};
-	if( $elem eq 'record' && !exists($self->{"in_record"}) ) {
-		$self->{OLDHandler} = $self->get_handler;
-		my $rec = HTTP::OAI::Record->new(
-			version=>$self->version,
-			handlers=>$self->{handlers},
-		);
-		$self->record($rec);
-		$self->set_handler($rec);
-		$self->{"in_record"} = $hash->{Depth};
-	}
-	$self->SUPER::start_element($hash);
-}
-
-sub end_element {
-	my ($self,$hash) = @_;
-	$self->SUPER::end_element($hash);
-	my $elem = lc($hash->{LocalName});
-	if( $elem eq 'record' &&
-		exists($self->{"in_record"}) &&
-		$self->{"in_record"} == $hash->{Depth} ) {
-		$self->set_handler($self->{OLDHandler});
+		$_->generate( $driver );
 	}
 }
 

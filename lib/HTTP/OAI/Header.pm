@@ -1,30 +1,12 @@
 package HTTP::OAI::Header;
 
+@ISA = qw( HTTP::OAI::MemberMixin HTTP::OAI::SAX::Base );
+
 use strict;
-use warnings;
 
 use POSIX qw/strftime/;
 
-use vars qw(@ISA);
-
-use HTTP::OAI::SAXHandler qw( :SAX );
-
-@ISA = qw(HTTP::OAI::Encapsulation);
-
-sub new {
-	my ($class,%args) = @_;
-	my $self = $class->SUPER::new(%args);
-
-	$self->identifier($args{identifier}) unless $self->identifier;
-	$self->datestamp($args{datestamp}) unless $self->datestamp;
-	$self->status($args{status}) unless $self->status;
-	$self->{setSpec} ||= $args{setSpec} || [];
-
-	$self;
-}
-
 sub identifier { shift->_elem('identifier',@_) }
-sub now { return strftime("%Y-%m-%dT%H:%M:%SZ",gmtime()) }
 sub datestamp {
 	my $self = shift;
 	return $self->_elem('datestamp') unless @_;
@@ -36,58 +18,29 @@ sub datestamp {
 	}
 	return $self->_elem('datestamp',$ds);
 }
-sub status { shift->_attr('status',@_) }
+sub status { shift->_elem('status',@_) }
+sub setSpec { shift->_multi('setSpec',@_) }
+
+sub now { return strftime("%Y-%m-%dT%H:%M:%SZ",gmtime()) }
+
 sub is_deleted { my $s = shift->status(); return defined($s) && $s eq 'deleted'; }
 
-sub setSpec {
-	my $self = shift;
-	push(@{$self->{setSpec}},@_);
-	@{$self->{setSpec}};
-}
-
-sub dom {
-	my $self = shift;
-	if( my $dom = shift ) {
-		my $driver = XML::LibXML::SAX::Parser->new(
-			Handler=>HTTP::OAI::SAXHandler->new(
-				Handler=>$self
-		));
-		$driver->generate($dom->ownerDocument);
-	} else {
-		$self->set_handler(my $builder = XML::LibXML::SAX::Builder->new());
-		g_start_document($self);
-		$self->xml_decl({'Version'=>'1.0','Encoding'=>'UTF-8'});
-		$self->characters({'Data'=>"\n"});
-		$self->generate();
-		$self->end_document();
-		return $builder->result;
-	}
-}
-
-sub generate {
-	my ($self) = @_;
-	return unless defined(my $handler = $self->get_handler);
+sub generate
+{
+	my ($self, $driver) = @_;
 
 	if( defined($self->status) ) {
-		g_start_element($handler,'http://www.openarchives.org/OAI/2.0/','header',
-			{
-				"{}status"=>{
-					'Name'=>'status',
-					'LocalName'=>'status',
-					'Value'=>$self->status,
-					'Prefix'=>'',
-					'NamespaceURI'=>''
-				}
-			});
+		$driver->start_element( 'header', status => $self->status );
 	} else {
-		g_start_element($handler,'http://www.openarchives.org/OAI/2.0/','header',{});
+		$driver->start_element( 'header' );
 	}
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','identifier',{},$self->identifier);
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','datestamp',{},($self->datestamp || $self->now));
-	for($self->setSpec) {
-		g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','setSpec',{},$_);
+	$driver->data_element( 'identifier', $self->identifier );
+	$driver->data_element( 'datestamp', ($self->datestamp || $self->now) );
+	for($self->setSpec)
+	{
+		$driver->data_element( 'setSpec', $_ );
 	}
-	g_end_element($handler,'http://www.openarchives.org/OAI/2.0/','header');
+	$driver->end_element( 'header' );
 }
 
 sub end_element {
@@ -100,10 +53,8 @@ sub end_element {
 		$text =~ s/\s+$//;
 	}
 	if( $elem eq 'identifier' ) {
-		die "HTTP::OAI::Header parse error: Empty identifier\n" unless $text;
 		$self->identifier($text);
 	} elsif( $elem eq 'datestamp' ) {
-		warn "HTTP::OAI::Header parse warning: Empty datestamp for ".$self->identifier."\n" unless $text;
 		$self->datestamp($text);
 	} elsif( $elem eq 'setspec' ) {
 		$self->setSpec($text);

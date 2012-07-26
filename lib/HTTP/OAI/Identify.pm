@@ -1,100 +1,56 @@
 package HTTP::OAI::Identify;
 
+@ISA = qw( HTTP::OAI::Verb );
+
 use strict;
-use warnings;
 
 use HTTP::OAI::SAXHandler qw( :SAX );
 
-use vars qw( @ISA );
-@ISA = qw( HTTP::OAI::Response );
-
-sub new {
-	my ($class,%args) = @_;
-	delete $args{'harvestAgent'}; # Otherwise we get a memory cycle with $h->repository($id)!
-	for(qw( adminEmail compression description )) {
-		$args{$_} ||= [];
-	}
-	$args{handlers}->{description} ||= "HTTP::OAI::Metadata";
-	my $self = $class->SUPER::new(%args);
-
-	$self->verb('Identify') unless $self->verb;
-	$self->baseURL($args{baseURL}) unless $self->baseURL;
-	$self->adminEmail($args{adminEmail}) if !ref($args{adminEmail}) && !$self->adminEmail;
-	$self->protocolVersion($args{protocolVersion} || '2.0') unless $self->protocolVersion;
-	$self->repositoryName($args{repositoryName}) unless $self->repositoryName;
-	$self->earliestDatestamp($args{earliestDatestamp}) unless $self->earliestDatestamp;
-	$self->deletedRecord($args{deletedRecord}) unless $self->deletedRecord;
-	$self->granularity($args{granularity}) unless $self->granularity;
-
-	$self;
-}
-
-sub adminEmail {
-	my $self = shift;
-	push @{$self->{adminEmail}}, @_;
-	return wantarray ?
-		@{$self->{adminEmail}} :
-		$self->{adminEmail}->[0]
-}
-sub baseURL { shift->headers->header('baseURL',@_) }
-sub compression {
-	my $self = shift;
-	push @{$self->{compression}}, @_;
-	return wantarray ?
-		@{$self->{compression}} :
-		$self->{compression}->[0];
-}
-sub deletedRecord { return shift->headers->header('deletedRecord',@_) }
-sub description {
-	my $self = shift;
-	push(@{$self->{description}}, @_);
-	return wantarray ?
-		@{$self->{description}} :
-		$self->{description}->[0];
-};
-sub earliestDatestamp { return shift->headers->header('earliestDatestamp',@_) }
-sub granularity { return shift->headers->header('granularity',@_) }
-sub protocolVersion { return shift->headers->header('protocolVersion',@_) };
-sub repositoryName { return shift->headers->header('repositoryName',@_) };
+sub adminEmail { shift->_elem('adminEmail',@_) }
+sub baseURL { shift->_elem('baseURL',@_) }
+sub compression { shift->_multi('compression',@_) }
+sub deletedRecord { shift->_elem('deletedRecord',@_) }
+sub description { shift->_multi('description',@_) }
+sub earliestDatestamp { shift->_elem('earliestDatestamp',@_) }
+sub granularity { shift->_elem('granularity',@_) }
+sub protocolVersion { shift->_elem('protocolVersion',@_) }
+sub repositoryName { shift->_elem('repositoryName',@_) }
 
 sub next {
 	my $self = shift;
 	return shift @{$self->{description}};
 }
 
-sub generate_body {
-	my ($self) = @_;
-	return unless defined(my $handler = $self->get_handler);
+sub generate_body
+{
+	my( $self, $driver ) = @_;
 
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','repositoryName',{},$self->repositoryName);
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','baseURL',{},"".$self->baseURL);
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','protocolVersion',{},$self->protocolVersion);
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','adminEmail',{},$_) for $self->adminEmail;
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','earliestDatestamp',{},$self->earliestDatestamp||'0001-01-01');
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','deletedRecord',{},$self->deletedRecord||'no');
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','granularity',{},$self->granularity) if defined($self->granularity);
-	g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','compression',{},$_) for $self->compression;
+	for(qw( repositoryName baseURL protocolVersion adminEmail earliestDatestamp deletedRecord granularity compression ))
+	{
+		foreach my $value ($self->$_)
+		{
+			$driver->data_element( $_, $value );
+		}
+	}
 
 	for($self->description) {
-		g_data_element($handler,'http://www.openarchives.org/OAI/2.0/','description',{},$_);
+		$_->generate( $driver );
 	}
 }
 
 sub start_element {
-	my ($self,$hash) = @_;
+	my ($self,$hash,$r) = @_;
 	my $elem = lc($hash->{LocalName});
 	if( $elem eq 'description' && !$self->{"in_$elem"} ) {
-		$self->{OLDHandler} = $self->get_handler();
-		$self->set_handler(my $handler = $self->{handlers}->{$elem}->new());
-		$self->description($handler);
+		$self->set_handler(my $desc = HTTP::OAI::Metadata->new);
+		$self->description([$self->description, $desc]);
 		$self->{"in_$elem"} = $hash->{Depth};
-		g_start_document($handler);
 	}
-	$self->SUPER::start_element($hash);
+	$self->SUPER::start_element($hash,$r);
 }
 
 sub end_element {
-	my ($self,$hash) = @_;
+	my ($self,$hash,$r) = @_;
 	my $elem = $hash->{LocalName};
 	my $text = $hash->{Text};
 	if( defined $text )
@@ -102,12 +58,11 @@ sub end_element {
 		$text =~ s/^\s+//;
 		$text =~ s/\s+$//;
 	}
-	$self->SUPER::end_element($hash);
+	$self->SUPER::end_element($hash,$r);
 	if( defined($self->get_handler) ) {
 		if( $elem eq 'description' && $self->{"in_$elem"} == $hash->{Depth} ) {
-			$self->SUPER::end_document();
-			$self->set_handler($self->{OLDHandler});
-			$self->{"in_$elem"} = undef;
+			$self->set_handler( undef );
+			$self->{"in_$elem"} = 0;
 		}
 	} elsif( $elem eq 'adminEmail' ) {
 		$self->adminEmail($text);
@@ -119,7 +74,7 @@ sub end_element {
 		$text = '2.0' if $text =~ /\D/ or $text < 2.0;
 		$self->protocolVersion($text);
 	} elsif( defined($text) && length($text) ) {
-		$self->headers->header($elem,$text);
+		$self->_elem($elem,$text);
 	}
 }
 
