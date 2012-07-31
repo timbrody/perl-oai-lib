@@ -51,8 +51,9 @@ sub _list
 
 	# resume the partial list?
 	# note: noRecordsMatch is a "success" but won't have a resumptionToken
-	while($self->resume && $r->is_success && !$r->error && defined(my $token = $r->resumptionToken))
+	RESUME: while($self->resume && $r->is_success && !$r->error && defined(my $token = $r->resumptionToken))
 	{
+		last RESUME if !$token->resumptionToken;
 		local $self->{recursion};
 		$r = $self->_oai(
 			$r->{onRecord},
