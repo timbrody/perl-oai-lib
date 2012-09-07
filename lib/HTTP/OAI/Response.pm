@@ -17,7 +17,7 @@ sub AUTOLOAD
 
 	# don't call a $self method here, because that might call AUTOLOAD again!
 	my $content = $self->{content}->[-1];
-	return $content->$AUTOLOAD( @_ );
+	return defined $content ? $content->$AUTOLOAD( @_ ) : undef;
 }
 
 sub new
