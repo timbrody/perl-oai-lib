@@ -23,6 +23,10 @@ sub end_element
 	$hash->{Text} = $self->{Data};
 	$hash->{Attributes} = pop @{$self->{Attributes} || []};
 
+	# strip surrounding whitespace in leaf nodes
+	$hash->{Text} =~ s/^\s+//;
+	$hash->{Text} =~ s/\s+$//;
+
 	$self->SUPER::characters( {Data => $self->{Data}}, @_ );
 
 	$self->{Data} = "";
