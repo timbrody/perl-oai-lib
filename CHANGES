@@ -1,3 +1,8 @@
+4.01
+	- Reworked API to use DocumentFragments
+	- Various speed improvements
+	- Added bin/oai_pmh.pl CLI tool
+
 3.28
 	- Fixed parsing <description> elements that contain multiple child nodes
 
