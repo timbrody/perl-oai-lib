@@ -9,7 +9,7 @@ sub start_element
 	( my $self, my $hash, @_ ) = @_;
 
 	$self->{Data} = "";
-	$self->{Attributes} = $hash->{Attributes};
+	push @{$self->{Attributes}}, $hash->{Attributes};
 
 	$self->SUPER::start_element( $hash, @_ );
 }
@@ -21,12 +21,11 @@ sub end_element
 	( my $self, my $hash, @_ ) = @_;
 
 	$hash->{Text} = $self->{Data};
-	$hash->{Attributes} = $self->{Attributes};
+	$hash->{Attributes} = pop @{$self->{Attributes} || []};
 
 	$self->SUPER::characters( {Data => $self->{Data}}, @_ );
 
 	$self->{Data} = "";
-	$self->{Attributes} = {};
 
 	$self->SUPER::end_element( $hash, @_ );
 }
