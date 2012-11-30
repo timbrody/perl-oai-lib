@@ -14,7 +14,6 @@ lib/HTTP/OAI/Error.pm
 lib/HTTP/OAI/GetRecord.pm
 lib/HTTP/OAI/Harvester.pm
 lib/HTTP/OAI/Header.pm
-lib/HTTP/OAI/Headers.pm
 lib/HTTP/OAI/Identify.pm
 lib/HTTP/OAI/ListIdentifiers.pm
 lib/HTTP/OAI/ListMetadataFormats.pm

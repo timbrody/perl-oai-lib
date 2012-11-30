@@ -114,7 +114,7 @@ Return the original version of the OAI response, according to the given XML name
 
 =item $i->headers
 
-Returns an HTTP::OAI::Headers object. Use $headers->header('headername') to retrive field values.
+Returns an HTTP::Headers object. Use $headers->header('headername') to retrive field values.
 
 =item $burl = $i->baseURL([$burl])
 
