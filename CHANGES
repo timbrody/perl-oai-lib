@@ -1,3 +1,6 @@
+4.02
+  - Fixed namespace issue with ResumptionToken.pm [sebastfr]
+
 4.01
 	- Reworked API to use DocumentFragments
 	- Various speed improvements
