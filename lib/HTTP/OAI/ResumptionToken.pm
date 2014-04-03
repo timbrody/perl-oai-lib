@@ -27,7 +27,7 @@ sub generate {
 sub end_element {
 	my ($self,$hash) = @_;
 	$self->SUPER::end_element($hash);
-	if( lc($hash->{Name}) eq 'resumptiontoken' ) {
+	if( lc($hash->{LocalName}) eq 'resumptiontoken' ) {
 		$self->resumptionToken($hash->{Text});
 
 		my $attr = $hash->{Attributes};
