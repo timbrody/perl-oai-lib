@@ -56,7 +56,7 @@ sub _list
 		last RESUME if !$token->resumptionToken;
 		local $self->{recursion};
 		$r = $self->_oai(
-			$r->{onRecord},
+			onRecord => $r->{onRecord},
 			handlers => $r->handlers,
 			verb => $r->verb,
 			resumptionToken => $token->resumptionToken,
