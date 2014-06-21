@@ -1,5 +1,6 @@
 package HTTP::OAI::UserAgent;
 
+use base HTTP::OAI;
 use strict;
 use warnings;
 
