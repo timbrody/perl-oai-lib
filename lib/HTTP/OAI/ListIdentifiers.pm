@@ -10,7 +10,7 @@ sub start_element
 {
 	my ($self,$hash, $r) = @_;
 
-	if( $hash->{Depth} == 3 && $hash->{LocalName} eq "header" )
+	if( $hash->{Depth} == 4 && $hash->{LocalName} eq "header" )
 	{
 		$self->set_handler(HTTP::OAI::Header->new);
 	}
@@ -21,18 +21,20 @@ sub start_element
 sub end_element {
 	my ($self,$hash, $r) = @_;
 
-	$self->SUPER::end_element($hash);
+	$self->SUPER::end_element($hash,$r);
 
 	# OAI 1.x
 	if( $hash->{Depth} == 3 && $hash->{LocalName} eq "identifier" )
 	{
+HTTP::OAI::Debug::trace( "record: " . $self->get_handler->identifier );
 		$r->callback(HTTP::OAI::Header->new(
 			identifier=>$hash->{Text},
 			datestamp=>'0000-00-00',
 		));
 	}
-	elsif( $hash->{Depth} == 3 && $hash->{LocalName} eq "header" )
+	elsif( $hash->{Depth} == 4 && $hash->{LocalName} eq "header" )
 	{
+HTTP::OAI::Debug::trace( "record: " . $self->get_handler->identifier );
 		$r->callback( $self->get_handler, $self );
 		$self->set_handler( undef );
 	}
