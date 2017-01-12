@@ -86,7 +86,7 @@ sub validate_request_2_0 {
 
 		if( my $err = &$valid_func($params{$arg}) ) {
 			return (new HTTP::OAI::Error(
-					code=>'badArgument', 
+					code=>'badArgument',
 					message=>("Bad argument ($arg): " . $err)
 				));
 		}
@@ -149,14 +149,14 @@ sub validate_date {
 }
 
 sub validate_responseDate {
-	return 
+	return
 		shift =~ /^(\d{4})\-([01][0-9])\-([0-3][0-9])T([0-2][0-9]):([0-5][0-9]):([0-5][0-9])[\+\-]([0-2][0-9]):([0-5][0-9])$/ ?
 		0 :
 		"responseDate not in OAI format (yyyy-mm-ddThh:mm:dd:ss[+-]hh:mm)";
 }
 
 sub validate_setSpec {
-	return 
+	return
 		shift =~ /^([A-Za-z0-9])+(:[A-Za-z0-9]+)*$/ ?
 		0 :
 		"Set spec not in OAI format, must match ^([A-Za-z0-9])+(:[A-Za-z0-9]+)*\$";
@@ -227,9 +227,19 @@ Using the OAI-PERL library in a repository context requires the user to build th
 	);
 	$r->about(HTTP::OAI::Metadata->new(dom=>$dom));
 
-	my $writer = XML::SAX::Writer->new();
-	$r->set_handler($writer);
-	$r->generate;
+	my $output;
+	my $w = XML::SAX::Writer->new(Output=>\$output);
+
+	my $driver = HTTP::OAI::SAX::Driver->new(
+			Handler => my $builder = XML::LibXML::SAX::Builder->new()
+		);
+		
+	$driver->start_oai_pmh();
+	$r->set_handler($w);
+	$r->generate($driver);
+	$driver->end_oai_pmh();
+
+	my $xml = $builder->result;
 
 =head1 Building an OAI compliant repository
 

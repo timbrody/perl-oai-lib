@@ -79,9 +79,19 @@ SKIP: {
 
 	my $output;
 	my $w = XML::SAX::Writer->new(Output=>\$output);
+
+	my $driver = HTTP::OAI::SAX::Driver->new(
+			Handler => my $builder = XML::LibXML::SAX::Builder->new()
+		);
+	$driver->start_oai_pmh();
+
 	$r->set_handler($w);
-	$r->generate;
-	# SAX::Writer behaves differently :-(
-#	ok($output eq $expected, 'XML::SAX::Writer');
-	ok(1);
+
+	$r->generate($driver);
+
+	$driver->end_oai_pmh();
+
+	my $xml = $builder->result;
+
+	ok($xml);
 }
