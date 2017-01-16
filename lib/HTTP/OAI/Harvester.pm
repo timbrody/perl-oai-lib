@@ -4,6 +4,8 @@ use base HTTP::OAI::UserAgent;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub new {
 	my ($class,%args) = @_;
 	my %ARGS = %args;
@@ -33,7 +35,7 @@ sub repository { shift->_elem('repository',@_) }
 
 sub baseURL {
 	my $self = shift;
-	return @_ ? 
+	return @_ ?
 		$self->repository->baseURL(URI->new(shift)->canonical) :
 		$self->repository->baseURL();
 }

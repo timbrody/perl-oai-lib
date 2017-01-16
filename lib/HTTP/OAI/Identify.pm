@@ -4,6 +4,8 @@ package HTTP::OAI::Identify;
 
 use strict;
 
+our $VERSION = '4.03';
+
 use HTTP::OAI::SAXHandler qw( :SAX );
 
 sub adminEmail { shift->_elem('adminEmail',@_) }

@@ -5,6 +5,8 @@ use warnings;
 
 use vars qw(@ISA $ACCEPT);
 
+our $VERSION = '4.03';
+
 # Do not use eval()
 our $USE_EVAL = 1;
 # Ignore bad utf8 characters
@@ -96,7 +98,7 @@ HTTP::OAI::Debug::trace( $args{verb} . " " . ref($parser) . "->parse_chunk()" );
 			$r->message( 'An error occurred while parsing: ' . $err );
 		}
 	}
-	
+
 	my $cnt_len = $parser->{content_length};
 	undef $parser;
 
@@ -174,7 +176,7 @@ sub lwp_badchar
 
 sub lwp_endparse
 {
-	my( $self, $parser ) = @_; 
+	my( $self, $parser ) = @_;
 
 	my $utf8 = $parser->{content_buffer};
 	# Replace bad chars with '?'

@@ -7,6 +7,8 @@ use XML::LibXML::XPathContext;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub new {
 	my $class = shift;
 	my $self = $class->SUPER::new(@_);

@@ -8,6 +8,8 @@ use HTTP::OAI::SAXHandler qw( :SAX );
 use vars qw(@ISA);
 @ISA = qw(XML::SAX::Base);
 
+our $VERSION = '4.03';
+
 sub new {
 	my $class = shift;
 	my %args = @_ > 1 ? @_ : (dom => shift);

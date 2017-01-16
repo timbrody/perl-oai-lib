@@ -113,7 +113,7 @@ http://www.openarchives.org/tools/tools.html.
 
 Ed Summers L<Net::OAI::Harvester> module.
 
-=head1 AUTHOR
+=head1 LICENSE
 
 Copyright 2004-2010 Tim Brody <tdb2@ecs.soton.ac.uk>, University of
 Southampton.

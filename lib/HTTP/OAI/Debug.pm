@@ -16,6 +16,8 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(level trace debug conns);
 
+our $VERSION = '4.03';
+
 use Carp ();
 
 my @levels = qw(trace debug conns sax);

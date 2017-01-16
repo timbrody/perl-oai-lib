@@ -7,6 +7,8 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
 use Data::Dumper; # debugging for here
 
+our $VERSION = '4.03';
+
 @ISA = qw( Exporter XML::SAX::Base );
 
 @EXPORT_OK = qw( g_start_document g_start_element g_end_element g_data_element );
@@ -128,7 +130,7 @@ sub characters {
 sub start_element {
 	my ($self,$hash) = @_;
 	push @{$self->{Attributes}}, $hash->{Attributes};
-	
+
 	# Call characters with the joined character data
 	if( defined($self->{Text}) )
 	{
@@ -158,7 +160,7 @@ HTTP::OAI::Debug::sax( "'".substr($self->{Text},0,40) . "'" );
 		}
 		$self->{Text} = undef;
 	}
-	
+
 	$hash->{Attributes} = pop @{$self->{Attributes}} || {};
 	$hash->{State} = $self;
 	$hash->{Depth} = $self->{Depth}--;

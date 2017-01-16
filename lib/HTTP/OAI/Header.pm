@@ -4,6 +4,8 @@ package HTTP::OAI::Header;
 
 use strict;
 
+our $VERSION = '4.03';
+
 use POSIX qw/strftime/;
 
 sub identifier { shift->_elem('identifier',@_) }

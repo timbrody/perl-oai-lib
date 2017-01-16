@@ -6,6 +6,8 @@ use XML::NamespaceSupport;
 
 use strict;
 
+our $VERSION = '4.03';
+
 =pod
 
 =head1 NAME
@@ -160,7 +162,7 @@ sub start_element
 			Value => $value,
 		};
 	}
-	
+
 	my ($Prefix,$LocalName) = split /:/, $Name;
 
 	unless(defined($LocalName)) {

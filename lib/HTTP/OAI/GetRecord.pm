@@ -5,6 +5,8 @@ require HTTP::OAI::ListRecords;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub record
 {
 	my $self = shift;

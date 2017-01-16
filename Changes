@@ -1,3 +1,10 @@
+Revision history for HTTP-OAI
+
+{{$NEXT}}
+  - Moving to Dist::Milla [phochste]
+  - Fixed Test t/getrecord.t fails [phochste]
+  - Fixing pod [phochste]
+
 4.03
   - Fixed MANIFEST [phochste]
 
@@ -94,7 +101,7 @@
 3.12
 	- BUG: Static repository was re-fetching the source for every request
 	- API change: when parsing a static repository records are now pre-parsed to allow for quick GetRecord access, this means you *must* supply the handlers argument to the Harvester constructor (otherwise the first request's handlers are always used)
-	- Added resumptionToken option to ListIdentifiers in the oai_browser.pl tool 
+	- Added resumptionToken option to ListIdentifiers in the oai_browser.pl tool
 
 2005-09-05
 

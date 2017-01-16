@@ -4,6 +4,8 @@ package HTTP::OAI::Set;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub setSpec { shift->_elem('setSpec',@_) }
 sub setName { shift->_elem('setName',@_) }
 sub setDescription { shift->_multi('setDescription',@_) }

@@ -4,6 +4,8 @@ package HTTP::OAI::SAX::Trace;
 
 our $AUTOLOAD;
 
+our $VERSION = '4.03';
+
 sub new
 {
 	my( $class, %self ) = @_;

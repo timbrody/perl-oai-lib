@@ -4,6 +4,8 @@ package HTTP::OAI::ListIdentifiers;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub identifier { shift->item(@_) }
 
 sub start_element
@@ -55,7 +57,7 @@ HTTP::OAI::ListIdentifiers - Provide access to an OAI ListIdentifiers response
 		print "datestamp => ", $rec->datestamp, "\n" if $rec->datestamp;
 		print "status => ", ($rec->status || 'undef'), "\n";
 	}
-	
+
 	die $r->message if $r->is_error;
 
 =head1 METHODS

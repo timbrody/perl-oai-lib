@@ -4,6 +4,8 @@ package HTTP::OAI::SAX::Text;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub start_element
 {
 	( my $self, my $hash, @_ ) = @_;

@@ -4,6 +4,8 @@ package HTTP::OAI::PartialList;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub resumptionToken { shift->_elem('resumptionToken',@_) }
 
 sub item { shift->_multi('item',@_) }

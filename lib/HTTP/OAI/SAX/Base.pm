@@ -4,6 +4,8 @@ package HTTP::OAI::SAX::Base;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub toString
 {
 	my $str = shift->dom->toString( 1 );

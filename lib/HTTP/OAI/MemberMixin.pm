@@ -2,6 +2,8 @@ package HTTP::OAI::MemberMixin;
 
 @ISA = qw( LWP::MemberMixin );
 
+our $VERSION = '4.03';
+
 sub new
 {
 	my( $class, %self ) = @_;
@@ -26,6 +28,8 @@ sub _multi
 
 1;
 
+__END__
+
 =head1 NAME
 
 HTTP::OAI::MemberMixin
@@ -47,3 +51,5 @@ See L<LWP::MemberMixin/_elem>.
 Same as L</_elem> but if you pass a non-ARRAY reference appends the given value(s).
 
 In list context returns a list of all the items.
+
+=back

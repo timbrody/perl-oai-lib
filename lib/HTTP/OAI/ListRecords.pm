@@ -4,6 +4,8 @@ package HTTP::OAI::ListRecords;
 
 use strict;
 
+our $VERSION = '4.03';
+
 sub record { shift->item(@_) }
 
 sub start_element
@@ -49,7 +51,7 @@ HTTP::OAI::ListRecords - Provide access to an OAI ListRecords response
 	while( my $rec = $r->next ) {
 		print "Identifier => ", $rec->identifier, "\n";
 	}
-	
+
 	die $r->message if $r->is_error;
 
 	# Using callback method
@@ -62,7 +64,7 @@ HTTP::OAI::ListRecords - Provide access to an OAI ListRecords response
 		onRecord=>\&callback
 	);
 	die $r->message if $r->is_error;
-	
+
 =head1 METHODS
 
 =over 4

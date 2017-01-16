@@ -6,6 +6,8 @@ use warnings;
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 require Exporter;
 
+our $VERSION = '4.03';
+
 @ISA = qw(Exporter);
 
 @EXPORT = qw();
@@ -233,7 +235,7 @@ Using the OAI-PERL library in a repository context requires the user to build th
 	my $driver = HTTP::OAI::SAX::Driver->new(
 			Handler => my $builder = XML::LibXML::SAX::Builder->new()
 		);
-		
+
 	$driver->start_oai_pmh();
 	$r->set_handler($w);
 	$r->generate($driver);

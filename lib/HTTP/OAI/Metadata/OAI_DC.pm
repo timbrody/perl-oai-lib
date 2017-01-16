@@ -4,6 +4,8 @@ package HTTP::OAI::Metadata::OAI_DC;
 
 use strict;
 
+our $VERSION = '4.03';
+
 our $OAI_DC_SCHEMA = 'http://www.openarchives.org/OAI/2.0/oai_dc/';
 our $DC_SCHEMA = 'http://purl.org/dc/elements/1.1/';
 our @DC_TERMS = qw( contributor coverage creator date description format identifier language publisher relation rights source subject title type );
