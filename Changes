@@ -1,6 +1,8 @@
 Revision history for HTTP-OAI
 
 {{$NEXT}}
+
+4.04  2017-01-19 10:06:11 CET
   - Moving to Dist::Milla [phochste]
   - Fixed Test t/getrecord.t fails [phochste]
   - Fixing pod [phochste]

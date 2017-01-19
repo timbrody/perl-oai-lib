@@ -69,7 +69,7 @@
          "web" : "https://github.com/LibreCat/perl-oai-lib"
       }
    },
-   "version" : "4.03",
+   "version" : "4.04",
    "x_contributors" : [
       "Jakob Voss <voss@gbv.de>",
       "Patrick Hochstenbach <patrick.hochstenbach@ugent.be>",

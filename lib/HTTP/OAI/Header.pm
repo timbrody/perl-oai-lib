@@ -4,7 +4,7 @@ package HTTP::OAI::Header;
 
 use strict;
 
-our $VERSION = '4.03';
+our $VERSION = '4.04';
 
 use POSIX qw/strftime/;
 
