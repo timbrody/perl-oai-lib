@@ -2,6 +2,10 @@
 
 HTTP::OAI - API for the OAI-PMH
 
+# STATUS
+
+[![Build Status](https://travis-ci.org/LibreCat/perl-oai-lib.svg?branch=master)](https://travis-ci.org/LibreCat/perl-oai-lib)
+
 # DESCRIPTION
 
 This is a stub module, you probably want to look at

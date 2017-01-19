@@ -60,13 +60,13 @@
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "web" : "https://github.com/timbrody/perl-oai-lib/issues"
+         "web" : "https://github.com/LibreCat/perl-oai-lib/issues"
       },
-      "homepage" : "https://github.com/timbrody/perl-oai-lib",
+      "homepage" : "https://github.com/LibreCat/perl-oai-lib",
       "repository" : {
          "type" : "git",
-         "url" : "https://github.com/timbrody/perl-oai-lib.git",
-         "web" : "https://github.com/timbrody/perl-oai-lib"
+         "url" : "https://github.com/LibreCat/perl-oai-lib.git",
+         "web" : "https://github.com/LibreCat/perl-oai-lib"
       }
    },
    "version" : "4.03",

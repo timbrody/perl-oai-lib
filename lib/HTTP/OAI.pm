@@ -100,6 +100,14 @@ __END__
 
 HTTP::OAI - API for the OAI-PMH
 
+=begin markdown
+
+# STATUS
+
+[![Build Status](https://travis-ci.org/LibreCat/perl-oai-lib.svg?branch=master)](https://travis-ci.org/LibreCat/perl-oai-lib)
+
+=end markdown
+
 =head1 DESCRIPTION
 
 This is a stub module, you probably want to look at
