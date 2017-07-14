@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 
-use encoding 'utf8';
-
 use HTTP::OAI;
 use Getopt::Long;
 use Pod::Usage;
