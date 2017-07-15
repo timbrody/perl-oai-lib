@@ -47,6 +47,8 @@ Turn on trace debugging of SAX calls.
 
 Don't perform an initial Identify to check the repository's baseURL.
 
+=back
+
 =cut
 
 BEGIN {
@@ -327,7 +329,7 @@ sub ListRecords {
 		},
 		onRecord => $cb,
 	);
-	
+
 	print "\nRead a total of $c records\n";
 
 	return if iserror($r);
