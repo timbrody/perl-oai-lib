@@ -1,6 +1,8 @@
 Revision history for HTTP-OAI
 
 {{$NEXT}}
+
+4.05  2017-07-15 10:19:45 CEST
   - Fixing 5.26 installs
   - Fixing installation of command line tools
   
