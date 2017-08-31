@@ -173,9 +173,9 @@ sub validate_setSpec_2_0 {
 
 sub validate_metadataPrefix {
 	return
-		shift =~ /^[\w]+$/ ?
+		shift =~ /^[A-Za-z0-9\-_\.!\~\*\'\(\)]+$/ ?
 		0 :
-		"Metadata prefix not in OAI format, must match regexp ^[\\w]+\$";
+		"Metadata prefix not in OAI format, must match regexp ^[A-Za-z0-9\\-_\\.!\\~\\*\\'\\(\\)]+\$/";
 }
 
 # OAI 2 requires identifiers by valid URIs
