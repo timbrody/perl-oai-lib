@@ -1,4 +1,4 @@
-use Test::More tests => 9;
+use Test::More;
 
 use_ok( 'HTTP::OAI' );
 use_ok( 'HTTP::OAI::Metadata::OAI_DC' );
@@ -98,3 +98,5 @@ SKIP: {
 
 	like $xml , qr{<\?xml-stylesheet type='text/xsl' href='/path/to/OAI.xslt'\?>} , 'found the stylesheet';
 }
+
+done_testing;
