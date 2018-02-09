@@ -111,6 +111,13 @@ sub generate
 {
 	my( $self, $driver ) = @_;
 
+	if( $self->xslt ) {
+	  $driver->processing_instruction({
+	    'Target' => 'xml-stylesheet',
+	    'Data' => 'type=\'text/xsl\' href=\''. $self->xslt . '\''
+	  });
+	}
+
 	if( !defined $self->version || $self->version eq "2.0" )
 	{
 		$driver->start_element( 'OAI-PMH',
