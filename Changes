@@ -1,6 +1,8 @@
 Revision history for HTTP-OAI
 
 {{$NEXT}}
+  - Fixing counting number of tests
+  - Fixed adding XSLT stylesheet process instructions #4
 
 4.06  2017-09-01 07:55:01 CEST
   - Fixed metadataPrefix unreserved characters bugs [sdt]
