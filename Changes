@@ -1,6 +1,8 @@
 Revision history for HTTP-OAI
 
 {{$NEXT}}
+
+4.08  2018-11-26 11:29:41 CET
   - Fixing passing DOM to HTTP::OAI::Metadata
   
 4.07  2018-05-28 15:14:54 CEST
