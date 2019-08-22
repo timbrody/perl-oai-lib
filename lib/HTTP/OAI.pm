@@ -117,7 +117,7 @@ L<HTTP::OAI::Repository|HTTP::OAI::Repository>.
 =head1 SEE ALSO
 
 You can find links to this and other OAI tools (perl, C++, java) at:
-http://www.openarchives.org/tools/tools.html.
+http://www.openarchives.org/pmh/tools/.
 
 Ed Summers L<Net::OAI::Harvester> module.
 
