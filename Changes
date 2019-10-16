@@ -1,6 +1,7 @@
 Revision history for HTTP-OAI
 
 {{$NEXT}}
+  - Support 429 Too Many Requests (RFC6585)
 
 4.08  2018-11-26 11:29:41 CET
   - Fixing passing DOM to HTTP::OAI::Metadata
