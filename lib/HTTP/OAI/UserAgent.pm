@@ -5,7 +5,7 @@ use warnings;
 
 use vars qw(@ISA $ACCEPT);
 
-our $VERSION = '4.09';
+our $VERSION = '4.10';
 
 # Do not use eval()
 our $USE_EVAL = 1;
