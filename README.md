@@ -15,7 +15,7 @@ This is a stub module, you probably want to look at
 # SEE ALSO
 
 You can find links to this and other OAI tools (perl, C++, java) at:
-http://www.openarchives.org/tools/tools.html.
+http://www.openarchives.org/pmh/tools/.
 
 Ed Summers [Net::OAI::Harvester](https://metacpan.org/pod/Net::OAI::Harvester) module.
 
