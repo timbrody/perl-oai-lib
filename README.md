@@ -9,15 +9,15 @@ HTTP::OAI - API for the OAI-PMH
 # DESCRIPTION
 
 This is a stub module, you probably want to look at
-[HTTP::OAI::Harvester](https://metacpan.org/pod/HTTP::OAI::Harvester) or
-[HTTP::OAI::Repository](https://metacpan.org/pod/HTTP::OAI::Repository).
+[HTTP::OAI::Harvester](https://metacpan.org/pod/HTTP%3A%3AOAI%3A%3AHarvester) or
+[HTTP::OAI::Repository](https://metacpan.org/pod/HTTP%3A%3AOAI%3A%3ARepository).
 
 # SEE ALSO
 
 You can find links to this and other OAI tools (perl, C++, java) at:
 http://www.openarchives.org/pmh/tools/.
 
-Ed Summers [Net::OAI::Harvester](https://metacpan.org/pod/Net::OAI::Harvester) module.
+Ed Summers [Net::OAI::Harvester](https://metacpan.org/pod/Net%3A%3AOAI%3A%3AHarvester) module.
 
 # LICENSE
 
