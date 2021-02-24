@@ -4,7 +4,7 @@ package HTTP::OAI::ListIdentifiers;
 
 use strict;
 
-our $VERSION = '4.09';
+our $VERSION = '4.11';
 
 sub identifier { shift->item(@_) }
 
