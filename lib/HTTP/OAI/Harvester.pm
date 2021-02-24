@@ -185,10 +185,30 @@ In the examples I use arXiv.org's and cogprints OAI interfaces. To avoid causing
 		}
 	);
 
-	# Offline parsing
-	$I = HTTP::OAI::Identify->new();
+	# End program
+	#################
+
+	#################
+	# If you have some local OAI-PMH reponse data you want to
+	# parse you can use the OAI-PMH verb as in:
+
+	use HTTP::OAI;
+	my $I = HTTP::OAI::Identify->new();
+
+	# If you have a $content string with some cached OAI-PMH verb=Identify response
+	# it can be parsed like this..
 	$I->parse_string($content);
+
+	# Or if you have an opened file handle $fh to a file with a cached
+	# OAI-PMH verb=Identify response
 	$I->parse_file($fh);
+
+	# Using either method now you can do something like
+
+	printf "RepositoryName: %s\n" , $I->repositoryName;
+	for ($I->adminEmail) {
+		print $_, "\n";
+	}
 
 =head1 METHODS
 
