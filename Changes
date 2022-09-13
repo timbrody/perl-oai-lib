@@ -1,6 +1,7 @@
 Revision history for HTTP-OAI
 
 {{$NEXT}}
+  - Adding a HTTP_OAI_AGENT environment variable
 
 4.11  2021-02-22 08:52:44 CET
   - Fixing errors in documentation

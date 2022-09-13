@@ -16,7 +16,12 @@ sub new {
 
 	$self->{'resume'} = exists($args{resume}) ? $args{resume} : 1;
 
-	$self->agent('OAI-PERL/'.$HTTP::OAI::VERSION);
+	if ($ENV{HTTP_OAI_AGENT}) {
+		$self->agent($ENV{HTTP_OAI_AGENT});
+	}
+	else {
+		$self->agent('OAI-PERL/'.$HTTP::OAI::VERSION);
+	}
 
 	# Record the base URL this harvester instance is associated with
 	$self->{repository} =
@@ -344,6 +349,11 @@ Return a list of sets provided by the repository. The scope of sets is undefined
 	die $ls->message if $ls->is_error;
 
 =back
+
+=head1 ENVIRONMENT
+
+The HTTP Agent is default OAI-PERL/<Version> where <Version> is the HTTP::OAI version. 
+This Agent can be set via an environment variable HTTP_OAI_AGENT.
 
 =head1 AUTHOR
 
